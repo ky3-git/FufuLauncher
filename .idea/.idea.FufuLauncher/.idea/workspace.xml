@@ -11,16 +11,10 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="2e6bf6ba-f1a7-4d7b-8b76-8b03b5df7f33" name="更改" comment="">
-      <change afterPath="$PROJECT_DIR$/FufuLauncher/Models/DocCategory.cs" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/FufuLauncher/Models/DocItem.cs" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/FufuLauncher/Models/DocSearchHit.cs" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/FufuLauncher/ViewModels/HelpViewModel.cs" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/FufuLauncher/Views/Main/HelpPage.xaml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/FufuLauncher/Views/Main/HelpPage.xaml.cs" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/.idea.FufuLauncher/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/.idea.FufuLauncher/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/FufuLauncher/FufuLauncher.csproj" beforeDir="false" afterPath="$PROJECT_DIR$/FufuLauncher/FufuLauncher.csproj" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/FufuLauncher/MainWindow.xaml" beforeDir="false" afterPath="$PROJECT_DIR$/FufuLauncher/MainWindow.xaml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/FufuLauncher/MainWindow.xaml.cs" beforeDir="false" afterPath="$PROJECT_DIR$/FufuLauncher/MainWindow.xaml.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/FufuLauncher/Strings/en-us/Resources.resw" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/FufuLauncher/Strings/zh-CN/Resources.resw" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/FufuLauncher/Strings/zh-TW/Resources.resw" beforeDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -338,14 +332,6 @@
       <workItem from="1777626387501" duration="5787000" />
       <workItem from="1777634165386" duration="6803000" />
       <workItem from="1778410252029" duration="1073000" />
-    </task>
-    <task id="LOCAL-00023" summary="update 1.0.9.4">
-      <option name="closed" value="true" />
-      <created>1772815701468</created>
-      <option name="number" value="00023" />
-      <option name="presentableId" value="LOCAL-00023" />
-      <option name="project" value="LOCAL" />
-      <updated>1772815701468</updated>
     </task>
     <task id="LOCAL-00024" summary="修复溢出问题">
       <option name="closed" value="true" />
@@ -731,7 +717,15 @@
       <option name="project" value="LOCAL" />
       <updated>1778518358846</updated>
     </task>
-    <option name="localTasksCounter" value="72" />
+    <task id="LOCAL-00072" summary="增加说明文档">
+      <option name="closed" value="true" />
+      <created>1778522876104</created>
+      <option name="number" value="00072" />
+      <option name="presentableId" value="LOCAL-00072" />
+      <option name="project" value="LOCAL" />
+      <updated>1778522876104</updated>
+    </task>
+    <option name="localTasksCounter" value="73" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -752,7 +746,6 @@
   </component>
   <component name="VcsManagerConfiguration">
     <option name="CLEAR_INITIAL_COMMIT_MESSAGE" value="true" />
-    <MESSAGE value="修改cookie刷新" />
     <MESSAGE value="增加手动输入cookie" />
     <MESSAGE value="增加问题反馈模板" />
     <MESSAGE value="更新1.1.0.1" />
@@ -777,7 +770,8 @@
     <MESSAGE value="1" />
     <MESSAGE value="优化体验" />
     <MESSAGE value="#145" />
-    <option name="LAST_COMMIT_MESSAGE" value="#145" />
+    <MESSAGE value="增加说明文档" />
+    <option name="LAST_COMMIT_MESSAGE" value="增加说明文档" />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>
