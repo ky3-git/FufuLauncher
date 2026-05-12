@@ -157,21 +157,23 @@ private async void CreateShortcut_Click(object sender, RoutedEventArgs e)
         
         if (Directory.Exists(rawPath))
         {
-            var cnPath = Path.Combine(rawPath, "YuanShen.exe");
-            var globalPath = Path.Combine(rawPath, "GenshinImpact.exe");
-
-            if (File.Exists(cnPath)) finalExePath = cnPath;
-            else if (File.Exists(globalPath)) finalExePath = globalPath;
-            else
+            var exeNames = await GameExeManager.GetExeNamesAsync();
+            bool found = false;
+            foreach (var name in exeNames)
+            {
+                var testPath = Path.Combine(rawPath, name);
+                if (File.Exists(testPath))
+                {
+                    finalExePath = testPath;
+                    found = true;
+                    break;
+                }
+            }
+            if (!found)
             {
                 await ShowError($"在文件夹中找不到游戏主程序：\n{rawPath}");
                 return;
             }
-        }
-        else if (!File.Exists(rawPath))
-        {
-             await ShowError($"路径无效，文件或文件夹不存在：\n{rawPath}");
-             return;
         }
         
         var appPath = Environment.ProcessPath;
@@ -700,15 +702,24 @@ private async void FpsOverlayToggle_Toggled(object sender, RoutedEventArgs e)
 
         private async Task<bool> ValidateGameExecutableAsync(string path)
         {
-            var cnExe = Path.Combine(path, "YuanShen.exe");
-            var globalExe = Path.Combine(path, "GenshinImpact.exe");
-
-            if (File.Exists(cnExe))
+            var exeNames = await GameExeManager.GetExeNamesAsync();
+            bool found = false;
+            bool isGlobal = false;
+    
+            foreach (var name in exeNames)
             {
-                return true;
+                if (File.Exists(Path.Combine(path, name)))
+                {
+                    found = true;
+                    if (name.Equals("GenshinImpact.exe", StringComparison.OrdinalIgnoreCase))
+                    {
+                        isGlobal = true;
+                    }
+                    break;
+                }
             }
 
-            if (File.Exists(globalExe))
+            if (isGlobal)
             {
                 var dialog = new ContentDialog
                 {
@@ -723,12 +734,16 @@ private async void FpsOverlayToggle_Toggled(object sender, RoutedEventArgs e)
                 var result = await dialog.ShowAsync();
                 return result == ContentDialogResult.Primary;
             }
+            else if (found)
+            {
+                return true;
+            }
             else
             {
                 var dialog = new ContentDialog
                 {
                     Title = "无效的游戏路径",
-                    Content = "在该路径下未找到游戏主程序 (YuanShen.exe 或 GenshinImpact.exe)。\n\n请确认您选择的是包含游戏可执行文件的安装目录。",
+                    Content = $"在该路径下未找到游戏主程序 ({string.Join(" 或 ", exeNames)})。\n\n请确认您选择的是包含游戏可执行文件的安装目录，或前往设置中配置自定义名称。",
                     CloseButtonText = "确定",
                     XamlRoot = XamlRoot
                 };
@@ -844,7 +859,7 @@ private async void FpsOverlayToggle_Toggled(object sender, RoutedEventArgs e)
         else
         {
             Debug.WriteLine("[Debug] 路径为空，准备调用 GamePathFinder.FindGamePath()...");
-            var foundPath = GamePathFinder.FindGamePath();
+            var foundPath = await GamePathFinder.FindGamePathAsync();
             Debug.WriteLine($"[Debug] GamePathFinder 返回的路径为: '{foundPath}'");
 
             if (!string.IsNullOrEmpty(foundPath))

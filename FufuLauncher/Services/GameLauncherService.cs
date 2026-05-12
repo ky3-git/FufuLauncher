@@ -6,6 +6,7 @@ using System.Text;
 using FufuLauncher.Contracts.Services;
 using FufuLauncher.ViewModels;
 using CommunityToolkit.Mvvm.Messaging;
+using FufuLauncher.Helpers;
 using FufuLauncher.Messages;
 
 namespace FufuLauncher.Services
@@ -194,30 +195,26 @@ namespace FufuLauncher.Services
                     return result;
                 }
 
-                var genshinExePath = Path.Combine(gamePath, "GenshinImpact.exe");
-                var yuanShenExePath = Path.Combine(gamePath, "YuanShen.exe");
-                
-                var hasGenshin = File.Exists(genshinExePath);
-                var hasYuanShen = File.Exists(yuanShenExePath);
-                var gameExePath = string.Empty;
-                
-                if (hasGenshin && hasYuanShen)
+                var exeNames = await GameExeManager.GetExeNamesAsync();
+                var foundExes = exeNames.Where(name => File.Exists(Path.Combine(gamePath, name))).ToList();
+
+                if (foundExes.Count == 0)
                 {
-                    result.ErrorMessage = "在当前游戏目录中同时检测到了国际服(GenshinImpact.exe)和国服(YuanShen.exe)程序，启动器无法确定该启动哪一个，请清理多余的客户端文件";
-                    logBuilder.AppendLine($"[启动流程] ? 错误: {result.ErrorMessage}");
+                    result.ErrorMessage = $"游戏主程序不存在，请检查路径设置是否正确\n查找的文件:\n" + string.Join("\n", exeNames);
+                    logBuilder.AppendLine($"[启动流程] 错误: {result.ErrorMessage}");
                     result.DetailLog = logBuilder.ToString();
                     return result;
                 }
 
-                if (!hasGenshin && !hasYuanShen)
+                if (foundExes.Count > 1 && exeNames.Count > 1)
                 {
-                    result.ErrorMessage = $"游戏主程序不存在，请检查路径设置是否正确\n查找路径:\n1. {genshinExePath}\n2. {yuanShenExePath}";
-                    logBuilder.AppendLine($"[启动流程] ? 错误: {result.ErrorMessage}");
+                    result.ErrorMessage = "在当前游戏目录中同时检测到了多个可执行程序，启动器无法确定该启动哪一个，请清理多余的客户端文件，或者在设置中自定义启动名称";
+                    logBuilder.AppendLine($"[启动流程] 错误: {result.ErrorMessage}");
                     result.DetailLog = logBuilder.ToString();
                     return result;
                 }
-                
-                gameExePath = hasGenshin ? genshinExePath : yuanShenExePath;
+
+                var gameExePath = Path.Combine(gamePath, foundExes.First());
                 logBuilder.AppendLine($"[启动流程] 找到游戏程序: {gameExePath}");
 
                 var config = await _gameConfigService.LoadGameConfigAsync(gamePath);

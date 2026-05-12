@@ -14,6 +14,7 @@ using Microsoft.UI.Windowing;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using System.Text.RegularExpressions;
+using FufuLauncher.Helpers;
 
 namespace FufuLauncher.ViewModels
 {
@@ -72,6 +73,8 @@ namespace FufuLauncher.ViewModels
         [ObservableProperty] private WindowBackdropType _currentWindowBackdrop;
         [ObservableProperty] private string _webView2CacheSize;
         [ObservableProperty] private bool _isAutoCheckinEnabled;
+        [ObservableProperty] private string _customGameExeName;
+        public IAsyncRelayCommand ResetGameExeNameCommand { get; }
 
         partial void OnIsAutoCheckinEnabledChanged(bool value)
         {
@@ -147,6 +150,7 @@ namespace FufuLauncher.ViewModels
             ClearWebView2CacheCommand = new AsyncRelayCommand(ClearWebView2CacheAsync);
             UpdateWebView2CacheSize();
             ClearCustomBackgroundCommand = new AsyncRelayCommand(ClearCustomBackgroundAsync);
+            ResetGameExeNameCommand = new AsyncRelayCommand(ResetGameExeNameAsync);
 
             SwitchThemeCommand = new RelayCommand<ElementTheme>(
                 async (param) =>
@@ -465,6 +469,9 @@ namespace FufuLauncher.ViewModels
             
             var autoCheckinJson = await _localSettingsService.ReadSettingAsync("IsAutoCheckinEnabled");
             IsAutoCheckinEnabled = autoCheckinJson != null && Convert.ToBoolean(autoCheckinJson);
+            
+            var customExeJson = await _localSettingsService.ReadSettingAsync(GameExeManager.CustomExeNameKey);
+            CustomGameExeName = customExeJson?.ToString() ?? string.Empty;
 
             var soundPathJson = await _localSettingsService.ReadSettingAsync("StartupSoundPath");
             if (soundPathJson != null)
@@ -521,6 +528,18 @@ namespace FufuLauncher.ViewModels
             }
 
         }
+        
+        partial void OnCustomGameExeNameChanged(string value)
+        {
+            _localSettingsService.SaveSettingAsync(GameExeManager.CustomExeNameKey, value);
+        }
+
+        private async Task ResetGameExeNameAsync()
+        {
+            CustomGameExeName = string.Empty;
+            await _localSettingsService.SaveSettingAsync<string>(GameExeManager.CustomExeNameKey, null);
+        }
+        
         partial void OnGlobalBackgroundImageOpacityChanged(double value)
         {
             var clamped = Math.Clamp(value, 0.0, 1.0);
