@@ -599,14 +599,44 @@ public class PluginSettingItem : ObservableObject
         get => int.TryParse(_rawValue, out var result) ? result : 0;
         set
         {
-            EnsureKeyOption(value);
             var targetValue = value.ToString();
             if (_rawValue != targetValue)
             {
                 var previousValue = _rawValue;
                 _rawValue = targetValue;
-                OnPropertyChanged();
-                OnPropertyChanged(nameof(KeyNumberValue));
+                
+                bool isNew = EnsureKeyOption(value);
+
+                if (isNew)
+                {
+                    WeakReferenceMessenger.Default.Send(new NotificationMessage(
+                        "内部视图已刷新",
+                        $"新增未知键值 {value}",
+                        NotificationType.Success,
+                        3000
+                    ));
+                    
+                    var dispatcher = Microsoft.UI.Dispatching.DispatcherQueue.GetForCurrentThread();
+                    if (dispatcher != null)
+                    {
+                        dispatcher.TryEnqueue(() =>
+                        {
+                            OnPropertyChanged();
+                            OnPropertyChanged(nameof(KeyNumberValue));
+                        });
+                    }
+                    else
+                    {
+                        OnPropertyChanged();
+                        OnPropertyChanged(nameof(KeyNumberValue));
+                    }
+                }
+                else
+                {
+                    OnPropertyChanged();
+                    OnPropertyChanged(nameof(KeyNumberValue));
+                }
+
                 UpdatePhysicalConfig(targetValue, previousValue, nameof(KeyValue));
             }
         }
@@ -725,15 +755,17 @@ public class PluginSettingItem : ObservableObject
         }
     }
 
-    private static void EnsureKeyOption(int keyCode)
+    private static bool EnsureKeyOption(int keyCode)
     {
-        if (keyCode <= 0) return;
-        if (_availableKeys.Any(k => k.KeyCode == keyCode)) return;
+        if (keyCode <= 0) return false;
+        if (_availableKeys.Any(k => k.KeyCode == keyCode)) return false;
 
         _availableKeys.Add(new VirtualKeyOption
         {
             KeyCode = keyCode,
             KeyName = $"Custom({keyCode})"
         });
+        
+        return true;
     }
 }
