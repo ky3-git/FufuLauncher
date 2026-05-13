@@ -145,17 +145,30 @@ public partial class AccountViewModel : ObservableRecipient
 
             if (!string.IsNullOrEmpty(displayConfig.GameUid))
             {
-                CurrentAccount = new AccountInfo
+                if (CurrentAccount == null || CurrentAccount.GameUid != displayConfig.GameUid)
                 {
-                    Nickname = displayConfig.Nickname,
-                    GameUid = displayConfig.GameUid,
-                    Server = displayConfig.Server,
-                    AvatarUrl = displayConfig.AvatarUrl,
-                    Level = displayConfig.Level,
-                    Sign = displayConfig.Sign,
-                    IpRegion = displayConfig.IpRegion,
-                    Gender = displayConfig.Gender
-                };
+                    CurrentAccount = new AccountInfo
+                    {
+                        Nickname = displayConfig.Nickname,
+                        GameUid = displayConfig.GameUid,
+                        Server = displayConfig.Server,
+                        AvatarUrl = displayConfig.AvatarUrl,
+                        Level = displayConfig.Level,
+                        Sign = displayConfig.Sign,
+                        IpRegion = displayConfig.IpRegion,
+                        Gender = displayConfig.Gender
+                    };
+                }
+                else
+                {
+                    CurrentAccount.Nickname = displayConfig.Nickname;
+                    CurrentAccount.Server = displayConfig.Server;
+                    CurrentAccount.AvatarUrl = displayConfig.AvatarUrl;
+                    CurrentAccount.Level = displayConfig.Level;
+                    CurrentAccount.Sign = displayConfig.Sign;
+                    CurrentAccount.IpRegion = displayConfig.IpRegion;
+                    CurrentAccount.Gender = displayConfig.Gender;
+                }
             
                 LoginButtonText = "重新登录";
                 StatusMessage = "账户已登录";
@@ -432,17 +445,28 @@ public partial class AccountViewModel : ObservableRecipient
             return;
         }
 
-        GameRolesInfo = null;
-        UserFullInfo = null;
-
         Debug.WriteLine("[LoadUserInfo] 正在调用远程API...");
         var rolesTask = _userInfoService.GetUserGameRolesAsync(config.Account.Cookie);
         var userInfoTask = _userInfoService.GetUserFullInfoAsync(config.Account.Cookie);
 
         await Task.WhenAll(rolesTask, userInfoTask);
 
-        GameRolesInfo = await rolesTask;
-        UserFullInfo = await userInfoTask;
+        var newRolesInfo = await rolesTask;
+        var newUserFullInfo = await userInfoTask;
+
+        var oldRolesJson = JsonSerializer.Serialize(GameRolesInfo);
+        var newRolesJson = JsonSerializer.Serialize(newRolesInfo);
+        if (oldRolesJson != newRolesJson)
+        {
+            GameRolesInfo = newRolesInfo;
+        }
+
+        var oldInfoJson = JsonSerializer.Serialize(UserFullInfo);
+        var newInfoJson = JsonSerializer.Serialize(newUserFullInfo);
+        if (oldInfoJson != newInfoJson)
+        {
+            UserFullInfo = newUserFullInfo;
+        }
 
         Debug.WriteLine($"[LoadUserInfo] API返回状态: RolesRet={GameRolesInfo?.retcode}, UserRet={UserFullInfo?.retcode}");
 

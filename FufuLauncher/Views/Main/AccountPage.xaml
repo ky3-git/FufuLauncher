@@ -360,21 +360,21 @@
                                         <StackPanel Grid.Column="0" Background="{ThemeResource CardBackgroundFillColorSecondaryBrush}" Padding="12" CornerRadius="4">
                                             <TextBlock Text="获赞数" FontSize="12" Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
                                             <TextBlock FontSize="20" FontWeight="SemiBold" Margin="0,4,0,0">
-                                                <Run Text="{Binding Converter={StaticResource DictionarySafeConverter}, ConverterParameter=like_num}"/>
+                                                <Run Text="{x:Bind ViewModel.UserFullInfo.data.user_info.achieve, Mode=OneWay, Converter={StaticResource DictionarySafeConverter}, ConverterParameter=like_num}"/>
                                             </TextBlock>
                                         </StackPanel>
 
                                         <StackPanel Grid.Column="1" Background="{ThemeResource CardBackgroundFillColorSecondaryBrush}" Padding="12" CornerRadius="4">
                                             <TextBlock Text="发帖数" FontSize="12" Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
                                             <TextBlock FontSize="20" FontWeight="SemiBold" Margin="0,4,0,0">
-                                                <Run Text="{Binding Converter={StaticResource DictionarySafeConverter}, ConverterParameter=post_num}"/>
+                                                <Run Text="{x:Bind ViewModel.UserFullInfo.data.user_info.achieve, Mode=OneWay, Converter={StaticResource DictionarySafeConverter}, ConverterParameter=post_num}"/>
                                             </TextBlock>
                                         </StackPanel>
 
                                         <StackPanel Grid.Column="2" Background="{ThemeResource CardBackgroundFillColorSecondaryBrush}" Padding="12" CornerRadius="4">
                                             <TextBlock Text="回复数" FontSize="12" Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
                                             <TextBlock FontSize="20" FontWeight="SemiBold" Margin="0,4,0,0">
-                                                <Run Text="{Binding Converter={StaticResource DictionarySafeConverter}, ConverterParameter=replypost_num}"/>
+                                                <Run Text="{x:Bind ViewModel.UserFullInfo.data.user_info.achieve, Mode=OneWay, Converter={StaticResource DictionarySafeConverter}, ConverterParameter=replypost_num}"/>
                                             </TextBlock>
                                         </StackPanel>
                                     </Grid>

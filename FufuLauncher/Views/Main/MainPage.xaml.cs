@@ -541,6 +541,7 @@ private async void ChangeUidButton_Click(object sender, RoutedEventArgs e)
         SetBannerImage(BannerCurrentImage, ViewModel.CurrentBanner);
         _displayedBanner = ViewModel.CurrentBanner;
         ResetBannerLayers();
+        FadeInInitialBanner();
     }
 
     private void TransitionToBanner(BannerItem targetBanner)
@@ -555,6 +556,7 @@ private async void ChangeUidButton_Click(object sender, RoutedEventArgs e)
             SetBannerImage(BannerCurrentImage, targetBanner);
             _displayedBanner = targetBanner;
             ResetBannerLayers();
+            FadeInInitialBanner();
             return;
         }
 
@@ -565,6 +567,23 @@ private async void ChangeUidButton_Click(object sender, RoutedEventArgs e)
 
         var direction = ResolveBannerDirection(_displayedBanner, targetBanner);
         StartBannerTransition(targetBanner, direction);
+    }
+
+    private void FadeInInitialBanner()
+    {
+        BannerCurrentLayer.Opacity = 0;
+        BannerCurrentScale.ScaleX = 1.02;
+        BannerCurrentScale.ScaleY = 1.02;
+
+        var storyboard = new Storyboard();
+        var easing = new CubicEase { EasingMode = EasingMode.EaseOut };
+        var duration = new Duration(TimeSpan.FromMilliseconds(600));
+
+        storyboard.Children.Add(CreateDoubleAnimation(BannerCurrentLayer, "Opacity", 1, duration, easing));
+        storyboard.Children.Add(CreateDoubleAnimation(BannerCurrentScale, "ScaleX", 1, duration, easing));
+        storyboard.Children.Add(CreateDoubleAnimation(BannerCurrentScale, "ScaleY", 1, duration, easing));
+
+        storyboard.Begin();
     }
 
     private int ResolveBannerDirection(BannerItem from, BannerItem to)

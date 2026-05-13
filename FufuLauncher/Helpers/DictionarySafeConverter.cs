@@ -1,4 +1,4 @@
-﻿using Microsoft.UI.Xaml.Data;
+using Microsoft.UI.Xaml.Data;
 
 namespace FufuLauncher.Helpers
 {
@@ -8,11 +8,11 @@ namespace FufuLauncher.Helpers
         {
             try
             {
-                if (value is Dictionary<string, object> dictionary && parameter is string key)
+                if (value is System.Collections.IDictionary dictionary && parameter is string key)
                 {
-                    if (dictionary.TryGetValue(key, out object result))
+                    if (dictionary.Contains(key))
                     {
-                        return result?.ToString() ?? "0";
+                        return dictionary[key]?.ToString() ?? "0";
                     }
                 }
                 return "0";

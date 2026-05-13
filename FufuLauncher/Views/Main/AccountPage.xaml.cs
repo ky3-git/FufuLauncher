@@ -1,4 +1,4 @@
-﻿using System.Diagnostics;
+using System.Diagnostics;
 using FufuLauncher.Models;
 using FufuLauncher.ViewModels;
 using Microsoft.UI.Xaml;
@@ -22,16 +22,17 @@ public sealed partial class AccountPage : Page
         Debug.WriteLine("AccountPage initialized");
     }
 
-    protected override async void OnNavigatedTo(NavigationEventArgs e)
+    protected override void OnNavigatedTo(NavigationEventArgs e)
     {
         base.OnNavigatedTo(e);
-
-        await ViewModel.LoadUserInfoAsync();
     }
 
-    private void Page_Loaded(object sender, RoutedEventArgs e)
+    private async void Page_Loaded(object sender, RoutedEventArgs e)
     {
         EntranceStoryboard.Begin();
+        
+        await Task.Delay(600);
+        await ViewModel.LoadUserInfoAsync();
     }
     
     private void AvatarPicture_Loaded(object sender, RoutedEventArgs e)
