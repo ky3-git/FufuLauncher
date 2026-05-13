@@ -114,8 +114,6 @@ public sealed partial class PluginPage : Page
     {
         EntranceStoryboard.Begin();
     
-        GetPluginsBtnAnimation.Begin();
-    
         if (ViewModel.Plugins.Count == 0) 
         {
             ViewModel.LoadPlugins();

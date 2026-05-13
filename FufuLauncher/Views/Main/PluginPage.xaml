@@ -22,22 +22,6 @@
                 </DoubleAnimation.EasingFunction>
             </DoubleAnimation>
         </Storyboard>
-        <Storyboard x:Name="GetPluginsBtnAnimation" AutoReverse="True" RepeatBehavior="Forever">
-            <DoubleAnimation Storyboard.TargetName="GetPluginsBtnScale"
-                             Storyboard.TargetProperty="ScaleX"
-                             From="1.0" To="1.2" Duration="0:0:1">
-                <DoubleAnimation.EasingFunction>
-                    <SineEase EasingMode="EaseInOut"/>
-                </DoubleAnimation.EasingFunction>
-            </DoubleAnimation>
-            <DoubleAnimation Storyboard.TargetName="GetPluginsBtnScale"
-                             Storyboard.TargetProperty="ScaleY"
-                             From="1.0" To="1.2" Duration="0:0:1">
-                <DoubleAnimation.EasingFunction>
-                    <SineEase EasingMode="EaseInOut"/>
-                </DoubleAnimation.EasingFunction>
-            </DoubleAnimation>
-        </Storyboard>
         <Storyboard x:Name="ExitStoryboard">
             <DoubleAnimation Storyboard.TargetName="RootLayoutGrid"
                              Storyboard.TargetProperty="Opacity"
@@ -100,17 +84,7 @@
             <AppBarButton x:Name="GetPluginsBtn" 
                           Icon="Download" 
                           Label="获取插件(Get Plugins)"
-                          Click="OnGetPluginsClick"
-                          Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}">
-                
-                <AppBarButton.Background>
-                    <SolidColorBrush Color="#1A0078D7"/> 
-                </AppBarButton.Background>
-
-                <AppBarButton.RenderTransform>
-                    <ScaleTransform x:Name="GetPluginsBtnScale" CenterX="24" CenterY="24"/>
-                </AppBarButton.RenderTransform>
-            </AppBarButton>
+                          Click="OnGetPluginsClick" />
             
             <AppBarButton Icon="Help" 
                   Label="自由视角怎么用" 

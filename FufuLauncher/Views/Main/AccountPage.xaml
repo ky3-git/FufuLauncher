@@ -325,6 +325,18 @@
 
                                 <Button Style="{StaticResource ActionButtonStyle}"
                                         Translation="0,0,32"
+                                        Command="{x:Bind ViewModel.CopyCookieCommand}">
+                                    <Button.Shadow>
+                                        <ThemeShadow />
+                                    </Button.Shadow>
+                                    <StackPanel Spacing="8" Orientation="Horizontal" HorizontalAlignment="Center">
+                                        <FontIcon Glyph="&#xE8C8;" FontSize="16"/>
+                                        <TextBlock Text="复制 Cookie"/>
+                                    </StackPanel>
+                                </Button>
+
+                                <Button Style="{StaticResource ActionButtonStyle}"
+                                        Translation="0,0,32"
                                         Command="{x:Bind ViewModel.LogoutCommand}">
                                     <Button.Shadow>
                                         <ThemeShadow />

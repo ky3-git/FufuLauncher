@@ -4,8 +4,10 @@ using System.Text.Json;
 using System.Text.RegularExpressions;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using CommunityToolkit.Mvvm.Messaging;
 using FufuLauncher.Constants;
 using FufuLauncher.Contracts.Services;
+using FufuLauncher.Messages;
 using FufuLauncher.Models;
 using FufuLauncher.Services;
 using FufuLauncher.Views;
@@ -45,6 +47,7 @@ public partial class AccountViewModel : ObservableRecipient
     public IRelayCommand LogoutCommand { get; }
     public IRelayCommand LoadUserInfoCommand { get; }
     public IRelayCommand OpenGenshinDataCommand { get; }
+    public IRelayCommand CopyCookieCommand { get; }
     public IRelayCommand AddAccountCommand { get; }
     public IRelayCommand<AccountInfo> SwitchAccountCommand { get; }
 
@@ -63,6 +66,7 @@ public partial class AccountViewModel : ObservableRecipient
         LogoutCommand = new RelayCommand(Logout);
         LoadUserInfoCommand = new AsyncRelayCommand(LoadUserInfoAsync);
         OpenGenshinDataCommand = new AsyncRelayCommand(OpenGenshinDataAsync);
+        CopyCookieCommand = new AsyncRelayCommand(CopyCookieAsync);
         AddAccountCommand = new AsyncRelayCommand(AddNewAccountAsync);
         SwitchAccountCommand = new AsyncRelayCommand<AccountInfo>(SwitchToAccountAsync);
         OpenSecurityCenterCommand = new AsyncRelayCommand(OpenSecurityCenterAsync);
@@ -73,6 +77,42 @@ public partial class AccountViewModel : ObservableRecipient
     private async Task LockAccountAsync()
     {
         await OpenSecurityWindowInternalAsync(ApiEndpoints.AccountLockUrl, "正在打开账号冻结页面...");
+    }
+
+    private async Task CopyCookieAsync()
+    {
+        try
+        {
+            var activeFileObj = await _localSettingsService.ReadSettingAsync("ActiveConfigFile");
+            string activeFile = activeFileObj?.ToString() ?? "config.json";
+            var configPath = Path.Combine(AppContext.BaseDirectory, activeFile);
+
+            if (File.Exists(configPath))
+            {
+                var json = await File.ReadAllTextAsync(configPath);
+                var config = JsonSerializer.Deserialize<HoyoverseCheckinConfig>(json, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+
+                if (!string.IsNullOrEmpty(config?.Account?.Cookie))
+                {
+                    var dataPackage = new Windows.ApplicationModel.DataTransfer.DataPackage();
+                    dataPackage.SetText(config.Account.Cookie);
+                    Windows.ApplicationModel.DataTransfer.Clipboard.SetContent(dataPackage);
+                    StatusMessage = "Cookie 已复制到剪切板";
+                    
+                    WeakReferenceMessenger.Default.Send(new NotificationMessage("复制成功", "Cookie 已成功复制到剪贴板", NotificationType.Success));
+                    return;
+                }
+            }
+            StatusMessage = "未找到有效的 Cookie";
+            
+            WeakReferenceMessenger.Default.Send(new NotificationMessage("复制失败", "未找到有效的 Cookie", NotificationType.Error));
+        }
+        catch (Exception ex)
+        {
+            StatusMessage = $"复制失败: {ex.Message}";
+            
+            WeakReferenceMessenger.Default.Send(new NotificationMessage("复制失败", ex.Message, NotificationType.Error));
+        }
     }
     
     private async Task OpenSecurityCenterAsync()
