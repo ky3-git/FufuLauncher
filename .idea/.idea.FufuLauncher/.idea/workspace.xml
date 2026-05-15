@@ -12,9 +12,6 @@
   <component name="ChangeListManager">
     <list default="true" id="2e6bf6ba-f1a7-4d7b-8b76-8b03b5df7f33" name="更改" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/.idea.FufuLauncher/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/.idea.FufuLauncher/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/FufuLauncher/FufuLauncher.csproj" beforeDir="false" afterPath="$PROJECT_DIR$/FufuLauncher/FufuLauncher.csproj" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/FufuLauncher/MainWindow.xaml.cs" beforeDir="false" afterPath="$PROJECT_DIR$/FufuLauncher/MainWindow.xaml.cs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/FufuLauncher/ViewModels/PluginSettingsViewModel.cs" beforeDir="false" afterPath="$PROJECT_DIR$/FufuLauncher/ViewModels/PluginSettingsViewModel.cs" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/FufuLauncher/Views/Main/PluginSettingsPage.xaml" beforeDir="false" afterPath="$PROJECT_DIR$/FufuLauncher/Views/Main/PluginSettingsPage.xaml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/FufuLauncher/Views/Main/PluginSettingsPage.xaml.cs" beforeDir="false" afterPath="$PROJECT_DIR$/FufuLauncher/Views/Main/PluginSettingsPage.xaml.cs" afterDir="false" />
     </list>
@@ -341,15 +338,7 @@
       <workItem from="1778671510168" duration="6464000" />
       <workItem from="1778698295341" duration="1903000" />
       <workItem from="1778782689175" duration="1424000" />
-      <workItem from="1778849171116" duration="5661000" />
-    </task>
-    <task id="LOCAL-00032" summary="修复部分功能">
-      <option name="closed" value="true" />
-      <created>1774984583321</created>
-      <option name="number" value="00032" />
-      <option name="presentableId" value="LOCAL-00032" />
-      <option name="project" value="LOCAL" />
-      <updated>1774984583321</updated>
+      <workItem from="1778849171116" duration="6513000" />
     </task>
     <task id="LOCAL-00033" summary="修改字体文件">
       <option name="closed" value="true" />
@@ -735,7 +724,15 @@
       <option name="project" value="LOCAL" />
       <updated>1778696261481</updated>
     </task>
-    <option name="localTasksCounter" value="81" />
+    <task id="LOCAL-00081" summary="增加头像替换">
+      <option name="closed" value="true" />
+      <created>1778855022294</created>
+      <option name="number" value="00081" />
+      <option name="presentableId" value="LOCAL-00081" />
+      <option name="project" value="LOCAL" />
+      <updated>1778855022294</updated>
+    </task>
+    <option name="localTasksCounter" value="82" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -756,7 +753,6 @@
   </component>
   <component name="VcsManagerConfiguration">
     <option name="CLEAR_INITIAL_COMMIT_MESSAGE" value="true" />
-    <MESSAGE value="修复权限问题" />
     <MESSAGE value="增加说明" />
     <MESSAGE value="修复 #120 和 #118 的版本检测问题以及除草提议" />
     <MESSAGE value="修复部分因权限导致的问题" />
@@ -781,7 +777,8 @@
     <MESSAGE value="设置中允许自定义启动程序#146" />
     <MESSAGE value="优化界面" />
     <MESSAGE value="1" />
-    <option name="LAST_COMMIT_MESSAGE" value="1" />
+    <MESSAGE value="增加头像替换" />
+    <option name="LAST_COMMIT_MESSAGE" value="增加头像替换" />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>
