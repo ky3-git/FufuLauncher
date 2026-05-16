@@ -285,31 +285,20 @@
               Margin="80,0,140,0"
               IsHitTestVisible="False">
             
-            <Border HorizontalAlignment="Left"
-                    VerticalAlignment="Center"
-                    CornerRadius="8"
-                    Padding="8,4,12,4">
-                
+            <Border HorizontalAlignment="Left" VerticalAlignment="Center" CornerRadius="8" Padding="8,4,12,4">
                 <Border.Background>
-                    <AcrylicBrush TintColor="White" 
-                                  TintOpacity="0.0" 
-                                  Opacity="0.6"
-                                  FallbackColor="#22FFFFFF"/>
+                    <SolidColorBrush Color="{ThemeResource SolidBackgroundFillColorBase}" Opacity="0.6"/>
                 </Border.Background>
 
-                 <StackPanel Orientation="Horizontal" Spacing="0">
-                    <Image x:Name="TitleBarIcon" 
-                           Width="20" 
-                           Height="20" 
-                           Margin="0,0,8,0"
-                           VerticalAlignment="Center"/>
-
+                <StackPanel Orientation="Horizontal" Spacing="0">
+                    <Image x:Name="TitleBarIcon" Width="20" Height="20" Margin="0,0,8,0" VerticalAlignment="Center"/>
+            
                     <TextBlock x:Name="TitleBarText"
                                Text="芙芙启动器"
                                FontSize="12"
                                FontWeight="SemiBold"
                                VerticalAlignment="Center"
-                               Foreground="White"/>
+                               Foreground="{ThemeResource TextFillColorPrimaryBrush}"/>
                 </StackPanel>
             </Border>
         </Grid>

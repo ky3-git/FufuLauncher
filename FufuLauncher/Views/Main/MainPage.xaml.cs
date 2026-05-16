@@ -418,6 +418,8 @@ private async void ChangeUidButton_Click(object sender, RoutedEventArgs e)
         _originalCheckinCardBrush = CheckinCardGrid.Background;
     
         ViewModel.PropertyChanged += ViewModel_PropertyChanged;
+        
+        ActualThemeChanged += (_, _) => UpdateCardBackgrounds();
     
         Loaded += (_, _) => 
         {
@@ -438,7 +440,12 @@ private async void ChangeUidButton_Click(object sender, RoutedEventArgs e)
     {
         if (ViewModel.IsVideoBackground)
         {
-            var semiTransparentBrush = new Microsoft.UI.Xaml.Media.SolidColorBrush(Microsoft.UI.Colors.Black) { Opacity = 0.5 };
+            var isLightTheme = ActualTheme == ElementTheme.Light || 
+                               (ActualTheme == ElementTheme.Default && Application.Current.RequestedTheme == ApplicationTheme.Light);
+        
+            var bgColor = isLightTheme ? Microsoft.UI.Colors.White : Microsoft.UI.Colors.Black;
+            var semiTransparentBrush = new Microsoft.UI.Xaml.Media.SolidColorBrush(bgColor) { Opacity = 0.5 };
+        
             InfoCardGrid.Background = semiTransparentBrush;
             CheckinCardGrid.Background = semiTransparentBrush;
         }

@@ -396,7 +396,7 @@ public partial class PluginSettingsViewModel : ObservableObject
         if (File.Exists(_dllPath))
         {
             var fileInfo = new FileInfo(_dllPath);
-            return fileInfo.Length < 99 * 1024;
+            return fileInfo.Length < 10 * 1024;
         }
         return false; 
     }

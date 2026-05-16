@@ -175,7 +175,7 @@ namespace FufuLauncher.Services
             return 0;
         }
 
-        public async Task<LaunchResult> LaunchGameAsync()
+public async Task<LaunchResult> LaunchGameAsync()
         {
             var result = new LaunchResult { Success = false, ErrorMessage = "未知错误", DetailLog = "" };
             var logBuilder = new StringBuilder();
@@ -233,8 +233,7 @@ namespace FufuLauncher.Services
 
                 var useInjection = await GetUseInjectionAsync();
                 logBuilder.AppendLine($"[启动流程] 注入模式: {(useInjection ? "启用" : "禁用")}");
-
-                // 将附加程序启动逻辑提前至此处（游戏启动之前）
+                
                 logBuilder.AppendLine("[启动流程] 正在启动附加程序...");
                 await LaunchAdditionalProgramAsync();
 
@@ -294,7 +293,7 @@ namespace FufuLauncher.Services
                         try
                         {
                             var fileInfo = new FileInfo(targetDllPath);
-                            if (fileInfo.Length < 99 * 1024)
+                            if (fileInfo.Length < 10 * 1024)
                             {
                                 logBuilder.AppendLine($"[启动流程] ! 警告: 插件文件({fileInfo.Length} bytes)大小异常，可能已经损坏");
                                 WeakReferenceMessenger.Default.Send(new NotificationMessage(
@@ -327,8 +326,7 @@ namespace FufuLauncher.Services
                 {
                     logBuilder.AppendLine("[启动流程] 游戏进程已启动，正在捕获目标PID...");
                     int gamePid = await WaitGenshinStartAsync();
-
-                    // 原附加程序启动调用位置已被移除
+                    
                     await LaunchBetterGIAsync();
 
                     await CheckAndLaunchFpsOverlayAsync(logBuilder, gamePid);

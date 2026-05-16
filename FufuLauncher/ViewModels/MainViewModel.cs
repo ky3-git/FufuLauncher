@@ -88,7 +88,7 @@ namespace FufuLauncher.ViewModels
         [ObservableProperty] private string _checkinSummary = "";
         
         [ObservableProperty] private string _checkinStateGlyph = "\uE730"; 
-        [ObservableProperty] private SolidColorBrush _checkinStateBrush = new(Microsoft.UI.Colors.White);
+        [ObservableProperty] private SolidColorBrush _checkinStateBrush = new(Microsoft.UI.Colors.Gray);
         
         [ObservableProperty] private string _launchButtonText = "请选择游戏路径";
         [ObservableProperty] private bool _isLaunchButtonEnabled = true;
@@ -654,7 +654,7 @@ private void BackgroundVideoPlayer_MediaFailed(MediaPlayer sender, MediaPlayerFa
         {
             bool isSigned = !string.IsNullOrEmpty(statusText) && 
                             (statusText.Contains("成功") || statusText.Contains("已"));
-    
+
             CheckinStateGlyph = "\uE73E"; 
 
             if (isSigned)
@@ -665,7 +665,7 @@ private void BackgroundVideoPlayer_MediaFailed(MediaPlayer sender, MediaPlayerFa
             }
             else
             {
-                CheckinStateBrush = new SolidColorBrush(Microsoft.UI.Colors.White) { Opacity = 0.3 };
+                CheckinStateBrush = new SolidColorBrush(Microsoft.UI.Colors.Gray) { Opacity = 0.8 };
                 IsCheckinButtonEnabled = true;
                 CheckinButtonText = "一键签到";
             }

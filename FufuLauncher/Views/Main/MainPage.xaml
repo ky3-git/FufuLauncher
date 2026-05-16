@@ -213,8 +213,8 @@
                         <Pivot.Resources>
                             <SolidColorBrush x:Key="PivotHeaderItemForeground" Color="White" />
                             <SolidColorBrush x:Key="PivotHeaderItemForegroundSelected" Color="White" />
-                            <SolidColorBrush x:Key="PivotHeaderItemForegroundPointerOver" Color="White" />
-                            <SolidColorBrush x:Key="PivotHeaderItemForegroundPressed" Color="White" />
+                            <SolidColorBrush x:Key="PivotHeaderItemForegroundPointerOver" Color="#CCFFFFFF" />
+                            <SolidColorBrush x:Key="PivotHeaderItemForegroundPressed" Color="#99FFFFFF" />
                             
                             <Style TargetType="PivotHeaderItem">
                                 <Setter Property="FontSize" Value="13"/>
@@ -291,6 +291,9 @@
                                 Command="{Binding ExecuteCheckinCommand}"
                                 IsEnabled="{Binding IsCheckinButtonEnabled, Mode=OneWay}"
                                 HorizontalAlignment="Stretch" 
+                                Background="#1AFFFFFF"
+                                BorderThickness="0"
+                                Foreground="White"
                                 CornerRadius="4" 
                                 Padding="12,6"
                                 Margin="0,0,8,0"/>

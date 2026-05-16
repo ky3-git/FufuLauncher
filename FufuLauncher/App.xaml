@@ -26,7 +26,6 @@
             
             <helpers:NullToVisibilityConverter x:Key="NullToVisibilityConverter"/>
             <helpers:IntToVisibilityConverter x:Key="IntToVisibilityConverter"/>
-            <Style x:Key="AccentButtonStyle" TargetType="Button" />
 
         </ResourceDictionary>
     </Application.Resources>
