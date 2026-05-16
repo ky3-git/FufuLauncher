@@ -47,6 +47,37 @@ public partial class PluginSettingsViewModel : ObservableObject
 
     [ObservableProperty]
     private bool hasAvatar;
+    
+    private bool _isAutoCreatePresetEnabled = true;
+
+    public bool IsAutoCreatePresetEnabled
+    {
+        get => _isAutoCreatePresetEnabled;
+        set
+        {
+            if (SetProperty(ref _isAutoCreatePresetEnabled, value))
+            {
+                var localSettings = App.GetService<FufuLauncher.Contracts.Services.ILocalSettingsService>();
+                if (localSettings != null)
+                {
+                    _ = localSettings.SaveSettingAsync("IsAutoCreatePresetEnabled", value);
+                }
+            }
+        }
+    }
+    
+    private bool _isMainPluginEnabled;
+    public bool IsMainPluginEnabled
+    {
+        get => _isMainPluginEnabled;
+        set
+        {
+            if (_isMainPluginEnabled != value)
+            {
+                ChangeMainPluginState(value);
+            }
+        }
+    }
 
     public ObservableCollection<PluginSettingItem> Settings { get; } = new();
 
@@ -95,17 +126,18 @@ public partial class PluginSettingsViewModel : ObservableObject
     }
 
     public Microsoft.UI.Xaml.Visibility SettingsOverlayVisibility => 
-        (SelectedPluginIndex == 1 && !_isFpsPluginEnabled) || (SelectedPluginIndex == 2 && !_isAvatarPluginEnabled) 
-        ? Microsoft.UI.Xaml.Visibility.Visible : Microsoft.UI.Xaml.Visibility.Collapsed;
+        (SelectedPluginIndex == 0 && !_isMainPluginEnabled) || (SelectedPluginIndex == 1 && !_isFpsPluginEnabled) || (SelectedPluginIndex == 2 && !_isAvatarPluginEnabled) 
+            ? Microsoft.UI.Xaml.Visibility.Visible : Microsoft.UI.Xaml.Visibility.Collapsed;
 
-    public bool IsSettingsInteractable => SelectedPluginIndex == 0 || (SelectedPluginIndex == 1 && _isFpsPluginEnabled) || (SelectedPluginIndex == 2 && _isAvatarPluginEnabled);
+    public bool IsSettingsInteractable => (SelectedPluginIndex == 0 && _isMainPluginEnabled) || (SelectedPluginIndex == 1 && _isFpsPluginEnabled) || (SelectedPluginIndex == 2 && _isAvatarPluginEnabled);
 
     public string OverlayWarningText
     {
         get
         {
+            if (SelectedPluginIndex == 0) return "已被禁用，请启用主插件才能调试配置";
             if (SelectedPluginIndex == 1) return "已被禁用，请启用FPS插件才能调试插件配置";
-            if (SelectedPluginIndex == 2) return "该插件已被禁用，开启后可替换千星奇域头像";
+            if (SelectedPluginIndex == 2) return "已被禁用，开启后可替换千星奇域头像";
             return string.Empty;
         }
     }
@@ -119,6 +151,30 @@ public partial class PluginSettingsViewModel : ObservableObject
         string avatarDir = Path.Combine(AppContext.BaseDirectory, "Plugins", "Avatar");
         string avatarEnabledPath = Path.Combine(avatarDir, "Avatar.dll");
         string avatarDisabledPath = Path.Combine(avatarDir, "Avatar.disabled");
+        
+        string mainDir = Path.Combine(AppContext.BaseDirectory, "Plugins", "FuFuPlugin");
+        string mainEnabledPath = Path.Combine(mainDir, "FufuLauncher.UnlockerIsland.dll");
+        string mainDisabledPath = Path.Combine(mainDir, "FufuLauncher.UnlockerIsland.disabled");
+
+        if (File.Exists(mainEnabledPath) && File.Exists(mainDisabledPath))
+        {
+            try 
+            { 
+                File.Delete(mainDisabledPath); 
+            } 
+            catch (Exception ex)
+            {
+                WeakReferenceMessenger.Default.Send(new NotificationMessage(
+                    "状态检查异常",
+                    $"无法删除多余的主插件禁用文件\n详细信息: {ex.Message}",
+                    NotificationType.Error,
+                    6000
+                ));
+            }
+        }
+    
+        _isMainPluginEnabled = File.Exists(mainEnabledPath);
+        OnPropertyChanged(nameof(IsMainPluginEnabled));
 
         if (File.Exists(fpsEnabledPath) && File.Exists(fpsDisabledPath))
         {
@@ -186,6 +242,39 @@ public partial class PluginSettingsViewModel : ObservableObject
         OnPropertyChanged(nameof(IsFpsPluginEnabled));
         OnPropertyChanged(nameof(IsAvatarPluginEnabled));
         RefreshUIState();
+    }
+    
+    private void ChangeMainPluginState(bool enable)
+    {
+        string mainDir = Path.Combine(AppContext.BaseDirectory, "Plugins", "FuFuPlugin");
+        string enabledPath = Path.Combine(mainDir, "FufuLauncher.UnlockerIsland.dll");
+        string disabledPath = Path.Combine(mainDir, "FufuLauncher.UnlockerIsland.disabled");
+
+        if (!Directory.Exists(mainDir)) Directory.CreateDirectory(mainDir);
+
+        try
+        {
+            if (enable && File.Exists(disabledPath))
+            {
+                File.Move(disabledPath, enabledPath);
+            }
+            else if (!enable && File.Exists(enabledPath))
+            {
+                File.Move(enabledPath, disabledPath);
+            }
+        
+            SetProperty(ref _isMainPluginEnabled, enable, nameof(IsMainPluginEnabled));
+            RefreshUIState();
+        }
+        catch (Exception ex)
+        {
+            WeakReferenceMessenger.Default.Send(new NotificationMessage(
+                "状态切换失败",
+                $"无法修改文件后缀名。\n详细信息: {ex.Message}",
+                NotificationType.Error,
+                6000
+            ));
+        }
     }
 
     private void ChangeFpsPluginState(bool enable)
@@ -289,7 +378,9 @@ public partial class PluginSettingsViewModel : ObservableObject
             _iniPath = Path.Combine(_pluginDir, "config.ini");
             if (subDir == "FuFuPlugin")
             {
-                _dllPath = Path.Combine(_pluginDir, "FufuLauncher.UnlockerIsland.dll");
+                string mainEnabledPath = Path.Combine(_pluginDir, "FufuLauncher.UnlockerIsland.dll");
+                string mainDisabledPath = Path.Combine(_pluginDir, "FufuLauncher.UnlockerIsland.disabled");
+                _dllPath = File.Exists(mainDisabledPath) ? mainDisabledPath : mainEnabledPath;
             }
             else
             {
@@ -354,6 +445,10 @@ public partial class PluginSettingsViewModel : ObservableObject
             var keyInputTask = localSettings.ReadSettingAsync("UseKeyListInput");
             keyInputTask.Wait();
             _useKeyListInput = keyInputTask.Result == null || Convert.ToBoolean(keyInputTask.Result);
+            
+            var autoCreateTask = localSettings.ReadSettingAsync("IsAutoCreatePresetEnabled");
+            autoCreateTask.Wait();
+            _isAutoCreatePresetEnabled = autoCreateTask.Result == null || Convert.ToBoolean(autoCreateTask.Result);
         }
 
         LoadConfiguration();
@@ -517,100 +612,118 @@ public partial class PluginSettingsViewModel : ObservableObject
     }
 
     private void ManagePresets(Dictionary<string, Dictionary<string, string>> currentIniData)
+{
+    AvailablePresets.Clear();
+    var currentHash = GetTargetDllHash();
+    var stateFile = Path.Combine(_presetsDir, "active_state.json");
+    string activePresetId = string.Empty;
+
+    if (File.Exists(stateFile))
     {
-        AvailablePresets.Clear();
-        var currentHash = GetTargetDllHash();
-        var stateFile = Path.Combine(_presetsDir, "active_state.json");
-        string activePresetId = string.Empty;
-
-        if (File.Exists(stateFile))
-        {
-            try
-            {
-                var stateContent = File.ReadAllText(stateFile);
-                var stateDict = JsonSerializer.Deserialize<Dictionary<string, string>>(stateContent);
-                if (stateDict != null && stateDict.TryGetValue("ActiveId", out var id))
-                {
-                    activePresetId = id;
-                }
-            }
-            catch
-            {
-            }
-        }
-
         try
         {
-            if (Directory.Exists(_presetsDir))
+            var stateContent = File.ReadAllText(stateFile);
+            var stateDict = JsonSerializer.Deserialize<Dictionary<string, string>>(stateContent);
+            if (stateDict != null && stateDict.TryGetValue("ActiveId", out var id))
             {
-                var presetFiles = Directory.GetFiles(_presetsDir, "*.json").Where(f => !f.EndsWith("active_state.json"));
-                PresetModel activeModel = null;
-
-                foreach (var file in presetFiles)
-                {
-                    try
-                    {
-                        var content = File.ReadAllText(file);
-                        var preset = JsonSerializer.Deserialize<PresetModel>(content);
-                        if (preset != null)
-                        {
-                            preset.FilePath = file;
-                            preset.IsLocked = preset.DllHash != currentHash;
-                            AvailablePresets.Add(preset);
-
-                            if (preset.Id == activePresetId)
-                            {
-                                activeModel = preset;
-                            }
-                        }
-                    }
-                    catch { }
-                }
-
-                if (activeModel != null && activeModel.IsLocked)
-                {
-                    WeakReferenceMessenger.Default.Send(new NotificationMessage(
-                        "检测到插件变更",
-                        "当前预设与最新插件版本不匹配，已自动生成新预设",
-                        NotificationType.Warning,
-                        5000
-                    ));
-                    activeModel = null;
-                }
-
-                if (activeModel == null)
-                {
-                    activeModel = CreateNewPreset($"默认预设_{DateTime.Now:yyyyMMdd_HHmmss}", currentIniData, currentHash);
-                }
-
-                CurrentPreset = activeModel;
-                SaveActiveState();
-
-                try
-                {
-                    _iniFile.UpdateMultiple(CurrentPreset.ConfigData);
-                }
-                catch (Exception ex)
-                {
-                    WeakReferenceMessenger.Default.Send(new NotificationMessage(
-                        "配置应用失败",
-                        $"无法将预设写入配置文件，请检查权限。\n详细信息: {ex.Message}",
-                        NotificationType.Error,
-                        6000
-                    ));
-                }
+                activePresetId = id;
             }
         }
-        catch (Exception ex)
+        catch
         {
-            WeakReferenceMessenger.Default.Send(new NotificationMessage(
-                "预设目录访问失败",
-                $"无法访问预设目录。\n详细信息: {ex.Message}",
-                NotificationType.Error,
-                6000
-            ));
         }
     }
+
+    try
+    {
+        if (Directory.Exists(_presetsDir))
+        {
+            var presetFiles = Directory.GetFiles(_presetsDir, "*.json").Where(f => !f.EndsWith("active_state.json"));
+            PresetModel activeModel = null;
+
+            foreach (var file in presetFiles)
+            {
+                try
+                {
+                    var content = File.ReadAllText(file);
+                    var preset = JsonSerializer.Deserialize<PresetModel>(content);
+                    if (preset != null)
+                    {
+                        preset.FilePath = file;
+                        
+                        if (preset.DllHash != currentHash)
+                        {
+                            if (IsAutoCreatePresetEnabled)
+                            {
+                                preset.IsLocked = true;
+                            }
+                            else
+                            {
+                                preset.DllHash = currentHash;
+                                preset.IsLocked = false;
+                                SavePresetToFile(preset);
+                            }
+                        }
+                        else
+                        {
+                            preset.IsLocked = false;
+                        }
+
+                        AvailablePresets.Add(preset);
+
+                        if (preset.Id == activePresetId)
+                        {
+                            activeModel = preset;
+                        }
+                    }
+                }
+                catch { }
+            }
+
+            if (activeModel != null && activeModel.IsLocked)
+            {
+                WeakReferenceMessenger.Default.Send(new NotificationMessage(
+                    "插件变更",
+                    "当前预设与最新插件版本不匹配，已自动生成新预设",
+                    NotificationType.Warning,
+                    5000
+                ));
+                activeModel = null;
+            }
+
+            if (activeModel == null)
+            {
+                activeModel = CreateNewPreset($"默认预设_{DateTime.Now:yyyyMMdd_HHmmss}", currentIniData, currentHash);
+            }
+
+            CurrentPreset = activeModel;
+            SaveActiveState();
+
+            try
+            {
+                _iniFile.UpdateMultiple(CurrentPreset.ConfigData);
+            }
+            catch (Exception ex)
+            {
+                WeakReferenceMessenger.Default.Send(new NotificationMessage(
+                    "配置应用失败",
+                    $"无法将预设写入配置文件，请检查权限\n详细信息: {ex.Message}",
+                    NotificationType.Error,
+                    6000
+                ));
+            }
+        }
+    }
+    catch (Exception ex)
+    {
+        WeakReferenceMessenger.Default.Send(new NotificationMessage(
+            "预设目录访问失败",
+            $"无法访问预设目录\n详细信息: {ex.Message}",
+            NotificationType.Error,
+            6000
+        ));
+    }
+}
 
     public PresetModel CreateNewPreset(string name, Dictionary<string, Dictionary<string, string>> data, string hash)
     {
@@ -640,7 +753,7 @@ public partial class PluginSettingsViewModel : ObservableObject
         {
             WeakReferenceMessenger.Default.Send(new NotificationMessage(
                 "预设保存失败",
-                $"无法保存预设文件，可能缺少写入权限。\n详细信息: {ex.Message}",
+                $"无法保存预设文件，可能缺少写入权限\n详细信息: {ex.Message}",
                 NotificationType.Error,
                 6000
             ));
@@ -660,7 +773,7 @@ public partial class PluginSettingsViewModel : ObservableObject
         {
             WeakReferenceMessenger.Default.Send(new NotificationMessage(
                 "状态保存失败",
-                $"无法保存激活状态记录，可能缺少写入权限。\n详细信息: {ex.Message}",
+                $"无法保存激活状态记录，可能缺少写入权限\n详细信息: {ex.Message}",
                 NotificationType.Error,
                 6000
             ));
@@ -694,7 +807,7 @@ public partial class PluginSettingsViewModel : ObservableObject
         {
             WeakReferenceMessenger.Default.Send(new NotificationMessage(
                 "配置更新失败",
-                $"切换预设时无法写入配置文件。\n详细信息: {ex.Message}",
+                $"切换预设时无法写入配置文件\n详细信息: {ex.Message}",
                 NotificationType.Error,
                 6000
             ));
@@ -732,7 +845,7 @@ public partial class PluginSettingsViewModel : ObservableObject
         {
             WeakReferenceMessenger.Default.Send(new NotificationMessage(
                 "预设删除失败",
-                $"无法删除指定的预设文件，文件可能被占用或权限不足。\n详细信息: {ex.Message}",
+                $"无法删除指定的预设文件，文件可能被占用或权限不足\n详细信息: {ex.Message}",
                 NotificationType.Error,
                 6000
             ));
