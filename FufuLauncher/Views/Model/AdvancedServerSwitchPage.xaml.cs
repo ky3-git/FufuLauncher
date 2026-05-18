@@ -443,54 +443,88 @@ namespace FufuLauncher.Views
             }
         }
 
-        private async Task<(string manifestUrl, string chunkPrefix, string chunkSuffix)> GetBranchAndManifestUrlAsync(bool isOversea, bool isBili = false, bool isPreDownload = false)
+private async Task<(string manifestUrl, string chunkPrefix, string chunkSuffix)> GetBranchAndManifestUrlAsync(bool isOversea, bool isBili = false, bool isPreDownload = false)
+{
+    string api = isOversea ? GameConstants.OS_API : GameConstants.CN_API;
+    string launcherId = isOversea ? GameConstants.OS_LAUNCHER_ID : (isBili ? GameConstants.BILI_LAUNCHER_ID : GameConstants.CN_LAUNCHER_ID);
+    string gameId = isOversea ? GameConstants.OS_GAME_ID : (isBili ? GameConstants.BILI_GAME_ID : GameConstants.CN_GAME_ID);
+
+    string url = $"{api}/getGameBranches?launcher_id={launcherId}&game_ids[]={gameId}";
+    var jsonResp = await httpClient.GetStringAsync(url);
+    using var doc = JsonDocument.Parse(jsonResp);
+    
+    var dataProp = doc.RootElement.GetProperty("data");
+    if (dataProp.ValueKind == JsonValueKind.Null)
+    {
+        throw new Exception("接口返回data为空，获取分支数据失败");
+    }
+    
+    var branches = dataProp.GetProperty("game_branches")[0];
+    
+    JsonElement targetBranch;
+    if (isPreDownload)
+    {
+        if (!branches.TryGetProperty("pre_download", out targetBranch) || targetBranch.ValueKind == JsonValueKind.Null)
         {
-            string api = isOversea ? GameConstants.OS_API : GameConstants.CN_API;
-            string launcherId = isOversea ? GameConstants.OS_LAUNCHER_ID : (isBili ? GameConstants.BILI_LAUNCHER_ID : GameConstants.CN_LAUNCHER_ID);
-            string gameId = isOversea ? GameConstants.OS_GAME_ID : (isBili ? GameConstants.BILI_GAME_ID : GameConstants.CN_GAME_ID);
-
-            string url = $"{api}/getGameBranches?launcher_id={launcherId}&game_ids[]={gameId}";
-            var jsonResp = await httpClient.GetStringAsync(url);
-            using var doc = JsonDocument.Parse(jsonResp);
-            var branches = doc.RootElement.GetProperty("data").GetProperty("game_branches")[0];
-            
-            JsonElement targetBranch;
-            if (isPreDownload)
-            {
-                if (!branches.TryGetProperty("pre_download", out targetBranch) || targetBranch.ValueKind == JsonValueKind.Null)
-                {
-                    throw new Exception("当前未开启预下载");
-                }
-            }
-            else
-            {
-                targetBranch = branches.GetProperty("main");
-            }
-
-            string buildUrl = targetBranch.TryGetProperty("build_url", out var bUrl) && bUrl.ValueKind == JsonValueKind.String ? bUrl.GetString() : null;
-
-            if (string.IsNullOrEmpty(buildUrl))
-            {
-                string sophonApi = isOversea ? GameConstants.OS_SOPHON : GameConstants.CN_SOPHON;
-                string pkgId = targetBranch.GetProperty("package_id").GetString();
-                string pwd = targetBranch.GetProperty("password").GetString();
-                string branchName = isPreDownload ? "pre_download" : "main";
-                buildUrl = $"{sophonApi}/getBuild?branch={branchName}&package_id={pkgId}&password={pwd}";
-            }
-
-            var buildJson = await httpClient.GetStringAsync(buildUrl);
-            using var buildDoc = JsonDocument.Parse(buildJson);
-            var manifestData = buildDoc.RootElement.GetProperty("data").GetProperty("manifests")[0];
-
-            string manifestId = manifestData.GetProperty("manifest").GetProperty("id").GetString();
-            string urlPrefix = manifestData.GetProperty("manifest_download").GetProperty("url_prefix").GetString();
-            string urlSuffix = manifestData.GetProperty("manifest_download").TryGetProperty("url_suffix", out var sfx) ? sfx.GetString() : "";
-
-            string chunkPrefix = manifestData.GetProperty("chunk_download").GetProperty("url_prefix").GetString();
-            string chunkSuffix = manifestData.GetProperty("chunk_download").TryGetProperty("url_suffix", out var csfx) ? csfx.GetString() : "";
-
-            return ($"{urlPrefix}/{manifestId}{urlSuffix}", chunkPrefix, chunkSuffix);
+            throw new Exception("当前未开启预下载");
         }
+    }
+    else
+    {
+        if (!branches.TryGetProperty("main", out targetBranch) || targetBranch.ValueKind == JsonValueKind.Null)
+        {
+            throw new Exception("无法获取 main 分支数据");
+        }
+    }
+
+    string buildUrl = targetBranch.TryGetProperty("build_url", out var bUrl) && bUrl.ValueKind == JsonValueKind.String ? bUrl.GetString() : null;
+
+    if (string.IsNullOrEmpty(buildUrl))
+    {
+        string sophonApi = isOversea ? GameConstants.OS_SOPHON : GameConstants.CN_SOPHON;
+        
+        if (!targetBranch.TryGetProperty("package_id", out var pkgIdProp) || pkgIdProp.ValueKind == JsonValueKind.Null)
+        {
+            throw new Exception("分支数据缺少package_id");
+        }
+        string pkgId = pkgIdProp.GetString();
+        
+        if (!targetBranch.TryGetProperty("password", out var pwdProp) || pwdProp.ValueKind == JsonValueKind.Null)
+        {
+            throw new Exception("分支数据缺少password");
+        }
+        string pwd = pwdProp.GetString();
+        
+        string branchName = isPreDownload ? "pre_download" : "main";
+        buildUrl = $"{sophonApi}/getBuild?branch={branchName}&package_id={pkgId}&password={pwd}";
+    }
+
+    var buildJson = await httpClient.GetStringAsync(buildUrl);
+    using var buildDoc = JsonDocument.Parse(buildJson);
+    
+    var buildDataProp = buildDoc.RootElement.GetProperty("data");
+    if (buildDataProp.ValueKind == JsonValueKind.Null)
+    {
+        throw new Exception(isPreDownload ? "获取预下载构建数据失败" : "失败");
+    }
+
+    var manifestsProp = buildDataProp.GetProperty("manifests");
+    if (manifestsProp.ValueKind == JsonValueKind.Null || manifestsProp.GetArrayLength() == 0)
+    {
+        throw new Exception("获取清单(manifests)失败。");
+    }
+    
+    var manifestData = manifestsProp[0];
+
+    string manifestId = manifestData.GetProperty("manifest").GetProperty("id").GetString();
+    string urlPrefix = manifestData.GetProperty("manifest_download").GetProperty("url_prefix").GetString();
+    string urlSuffix = manifestData.GetProperty("manifest_download").TryGetProperty("url_suffix", out var sfx) && sfx.ValueKind == JsonValueKind.String ? sfx.GetString() : "";
+
+    string chunkPrefix = manifestData.GetProperty("chunk_download").GetProperty("url_prefix").GetString();
+    string chunkSuffix = manifestData.GetProperty("chunk_download").TryGetProperty("url_suffix", out var csfx) && csfx.ValueKind == JsonValueKind.String ? csfx.GetString() : "";
+
+    return ($"{urlPrefix}/{manifestId}{urlSuffix}", chunkPrefix, chunkSuffix);
+}
 
         public async Task ExecutePreDownloadAsync()
         {
