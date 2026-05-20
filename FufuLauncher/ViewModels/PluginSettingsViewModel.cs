@@ -157,34 +157,32 @@ private async Task<bool> CheckHwidAuthorizationAsync()
 
         string hwid = SystemEnvironmentHelper.GetHwid();
         
-        // 增加详细的控制台打印和文件日志，使用 [] 标记字符串边界以排查空白字符问题
-        System.Diagnostics.Debug.WriteLine($"[HWID_DEBUG] 本地获取到的 HWID: [{hwid}]");
-        System.IO.File.WriteAllText("hwid_debug.txt", $"[HWID_DEBUG] Time: {DateTime.Now}\nLocal HWID: [{hwid}]\n");
+        System.Diagnostics.Debug.WriteLine($"[HWID_DEBUG] 本地获取到的HWID: [{hwid}]");
+        File.WriteAllText("hwid_debug.txt", $"[HWID_DEBUG] Time: {DateTime.Now}\nLocal HWID: [{hwid}]\n");
 
         if (string.IsNullOrEmpty(hwid) || hwid == "Unknown") return false;
 
         try
         {
-            using var client = new System.Net.Http.HttpClient();
+            using var client = new HttpClient();
             client.Timeout = TimeSpan.FromSeconds(5);
-            var content = new System.Net.Http.StringContent(
-                System.Text.Json.JsonSerializer.Serialize(new { hwid = hwid }),
+            var content = new StringContent(
+                JsonSerializer.Serialize(new { hwid = hwid }),
                 System.Text.Encoding.UTF8,
                 "application/json"
             );
             
-            System.Diagnostics.Debug.WriteLine($"[HWID_DEBUG] 请求的 JSON Payload: {await content.ReadAsStringAsync()}");
+            System.Diagnostics.Debug.WriteLine($"[HWID_DEBUG] 请求的Payload: {await content.ReadAsStringAsync()}");
 
             var response = await client.PostAsync("https://fu1.fun/api/verify-hwid", content);
             if (response.IsSuccessStatusCode)
             {
                 var responseString = await response.Content.ReadAsStringAsync();
                 
-                // 打印服务器返回的完整 JSON 数据
-                System.Diagnostics.Debug.WriteLine($"[HWID_DEBUG] 服务器返回的 JSON: {responseString}");
-                System.IO.File.AppendAllText("hwid_debug.txt", $"Response JSON={responseString}\n");
+                System.Diagnostics.Debug.WriteLine($"[HWID_DEBUG] 服务器返回的JSON: {responseString}");
+                File.AppendAllText("hwid_debug.txt", $"Response JSON={responseString}\n");
                 
-                var result = System.Text.Json.JsonDocument.Parse(responseString).RootElement;
+                var result = JsonDocument.Parse(responseString).RootElement;
                 if (result.TryGetProperty("authorized", out var authElement) && authElement.GetBoolean())
                 {
                     _isHwidAuthorized = true;
@@ -198,17 +196,17 @@ private async Task<bool> CheckHwidAuthorizationAsync()
             else
             {
                 System.Diagnostics.Debug.WriteLine($"[HWID_DEBUG] HTTP 请求失败，状态码: {response.StatusCode}");
-                System.IO.File.AppendAllText("hwid_debug.txt", $"ResponseStatusCode={response.StatusCode}\n");
+                File.AppendAllText("hwid_debug.txt", $"ResponseStatusCode={response.StatusCode}\n");
             }
         }
         catch (Exception ex)
         {
             System.Diagnostics.Debug.WriteLine($"[HWID_DEBUG] 发生异常: {ex.Message}");
-            System.IO.File.AppendAllText("hwid", $"Error={ex.Message}\n");
+            File.AppendAllText("hwid", $"Error={ex.Message}\n");
         }
 
         _hasCheckedHwid = true;
-        System.Diagnostics.Debug.WriteLine($"[HWID_DEBUG] 最终返回的授权结果: {_isHwidAuthorized}");
+        System.Diagnostics.Debug.WriteLine($"[HWID_DEBUG] 授权结果: {_isHwidAuthorized}");
         return _isHwidAuthorized;
     }
 
