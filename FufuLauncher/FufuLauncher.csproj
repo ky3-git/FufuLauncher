@@ -94,10 +94,6 @@
         </Compile>
     </ItemGroup>
 
-    <ItemGroup>
-      <Folder Include="Plugins\" />
-    </ItemGroup>
-
     <Target Name="RemoveUnwantedNativeLanguageFolders" AfterTargets="Build;Publish">
         <ItemGroup>
             <AllMuiFiles Include="$(OutDir)*\*.mui" />

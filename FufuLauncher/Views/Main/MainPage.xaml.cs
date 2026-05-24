@@ -435,7 +435,7 @@ private async void ChangeUidButton_Click(object sender, RoutedEventArgs e)
         InfoCardBlurBg.Opacity = 0.65;
         CheckinCardBlurBg.Opacity = 0.65;
         
-        await Task.Delay(700);
+        await Task.Delay(500);
 
         if (ViewModel.IsVideoBackground) return;
 

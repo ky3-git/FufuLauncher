@@ -28,7 +28,7 @@ public sealed partial class UpdateNotificationWindow : WindowEx
 
     private async void UpdateNotificationWindow_Loaded(object sender, RoutedEventArgs e)
     {
-        string currentVersion = "1.2.0.0";
+        string currentVersion = "1.2.0.1";
         
         var dialog = new ContentDialog
         {
