@@ -334,7 +334,7 @@ public partial class GachaAnalysisModel : ObservableObject
                     ItemType = reader.IsDBNull(7) ? null : reader.GetString(7),
                     RankType = reader.IsDBNull(8) ? null : reader.GetString(8)
                 };
-                var gt = item.GachaType;
+                var gt = GetNormalizedGachaType(item.GachaType);
                 if (gt == "301") _cachedCharacterLogs.Add(item);
                 else if (gt == "302") _cachedWeaponLogs.Add(item);
                 else _cachedStandardLogs.Add(item);
@@ -1003,9 +1003,7 @@ public partial class GachaAnalysisModel : ObservableObject
 
             var newLogs = items.Select(uigfItem =>
             {
-                var gachaType = !string.IsNullOrEmpty(uigfItem.UigfGachaType)
-                    ? UigfToGameGachaType(uigfItem.UigfGachaType)
-                    : uigfItem.GachaType;
+                var gachaType = uigfItem.GachaType;
 
                 var name = uigfItem.Name;
                 if (string.IsNullOrEmpty(name) && metaByItemId.TryGetValue(uigfItem.ItemId, out var meta))
@@ -1047,9 +1045,9 @@ public partial class GachaAnalysisModel : ObservableObject
                 };
             }).ToList();
 
-            _cachedCharacterLogs = MergeLogs(_cachedCharacterLogs, newLogs.Where(x => x.GachaType == "301").ToList());
-            _cachedWeaponLogs = MergeLogs(_cachedWeaponLogs, newLogs.Where(x => x.GachaType == "302").ToList());
-            _cachedStandardLogs = MergeLogs(_cachedStandardLogs, newLogs.Where(x => x.GachaType == "200" || x.GachaType == "100").ToList());
+            _cachedCharacterLogs = MergeLogs(_cachedCharacterLogs, newLogs.Where(x => GetNormalizedGachaType(x.GachaType) == "301").ToList());
+            _cachedWeaponLogs = MergeLogs(_cachedWeaponLogs, newLogs.Where(x => GetNormalizedGachaType(x.GachaType) == "302").ToList());
+            _cachedStandardLogs = MergeLogs(_cachedStandardLogs, newLogs.Where(x => GetNormalizedGachaType(x.GachaType) != "301" && GetNormalizedGachaType(x.GachaType) != "302").ToList());
 
             RefreshUIFromCache();
             HasGachaData = true;
@@ -1071,26 +1069,27 @@ public partial class GachaAnalysisModel : ObservableObject
         if (!IsScraping) IsFetching = false;
     }
 
+    private static string GetNormalizedGachaType(string gachaType) => gachaType switch
+    {
+        "301" or "400" => "301",
+        "302" => "302",
+        "200" => "200",
+        "100" => "100",
+        "500" => "500",
+        _ => "200"
+    };
+
     private static string GameToUigfGachaType(string gameType) => gameType switch
     {
         "100" => "100",
         "200" => "200",
         "301" => "301",
         "302" => "302",
-        "400" => "500",
+        "400" => "301",
         "500" => "500",
         _ => gameType
     };
 
-    private static string UigfToGameGachaType(string uigfType) => uigfType switch
-    {
-        "100" => "100",
-        "200" => "200",
-        "301" => "301",
-        "302" => "302",
-        "500" => "500",
-        _ => uigfType
-    };
 
     [RelayCommand]
     private async Task FetchGachaDataAsync()
