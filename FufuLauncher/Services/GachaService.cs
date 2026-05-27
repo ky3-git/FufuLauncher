@@ -162,6 +162,7 @@ public class GachaService
                 stat.FiveStarRecords.Add(new FiveStarRecord
                 {
                     Name = item.Name,
+                    ItemId = item.ItemId,
                     PityUsed = pityCounter5,
                     Time = item.Time,
                     Rank = 5
@@ -174,6 +175,7 @@ public class GachaService
                 stat.FourStarRecords.Add(new FiveStarRecord
                 {
                     Name = item.Name,
+                    ItemId = item.ItemId,
                     PityUsed = pityCounter4,
                     Time = item.Time,
                     Rank = 4
