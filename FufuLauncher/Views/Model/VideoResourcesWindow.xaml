@@ -7,8 +7,12 @@
     xmlns:controls="using:Microsoft.UI.Xaml.Controls"
     mc:Ignorable="d"
     Title="视频资源库">
+    
+    <Window.SystemBackdrop>
+        <MicaBackdrop />
+    </Window.SystemBackdrop>
 
-    <Grid Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
+    <Grid Background="Transparent">
         <Grid.Resources>
             <FontFamily x:Key="AppGlobalFont">/Assets/zh-cn-l.ttf#SDK_SC_Web</FontFamily>
         </Grid.Resources>
