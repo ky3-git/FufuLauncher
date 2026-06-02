@@ -495,4 +495,23 @@ public sealed partial class SettingsPage : Page
 
         CheckUpdateButton?.Focus(FocusState.Programmatic);
     }
+
+    public async Task NavigateToCheckinSettingsAsync()
+    {
+        var checkinNavItem = SettingsNavigationView.MenuItems
+            .OfType<NavigationViewItem>()
+            .FirstOrDefault(item => item.Tag?.ToString() == "CheckinSettingsItem");
+
+        if (checkinNavItem != null)
+        {
+            SettingsNavigationView.SelectedItem = checkinNavItem;
+        }
+
+        await Task.Delay(120);
+
+        if (CheckinSettingsItem != null)
+        {
+            BringElementIntoView(CheckinSettingsItem);
+        }
+    }
 }
