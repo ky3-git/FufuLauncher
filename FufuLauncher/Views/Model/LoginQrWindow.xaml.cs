@@ -823,7 +823,7 @@ public sealed partial class LoginQrWindow : Window
 
     #region 扫码换取V2Cookie
     
-    private async Task ExchangeV2TokensAndSaveAsync(string stoken, string mid, string aid)
+private async Task ExchangeV2TokensAndSaveAsync(string stoken, string mid, string aid)
     {
         try
         {
@@ -874,6 +874,12 @@ public sealed partial class LoginQrWindow : Window
                 {
                     finalCookies[kvp.Key] = kvp.Value;
                 }
+                
+                if (!finalCookies.ContainsKey("stoken") || string.IsNullOrEmpty(finalCookies["stoken"]))
+                {
+                    finalCookies["stoken"] = stoken;
+                }
+
                 SaveCredentials(finalCookies);
             }
             else
