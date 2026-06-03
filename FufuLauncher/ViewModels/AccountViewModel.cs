@@ -651,6 +651,20 @@ public partial class AccountViewModel : ObservableRecipient
         if (File.Exists(backupPath)) File.Delete(backupPath);
         if (File.Exists(labBackupPath)) File.Delete(labBackupPath);
 
+        var mainConfigPath = Path.Combine(baseDir, "config.json");
+        if (File.Exists(mainConfigPath))
+        {
+            var json = await File.ReadAllTextAsync(mainConfigPath);
+            var config = JsonSerializer.Deserialize<HoyoverseCheckinConfig>(json, new JsonSerializerOptions
+            {
+                PropertyNameCaseInsensitive = true
+            });
+            if (config?.Account?.Stuid == uid)
+            {
+                File.Delete(mainConfigPath);
+            }
+        }
+
         var gachaPath = Path.Combine(baseDir, "gacha_data.json");
         if (File.Exists(gachaPath))
         {
@@ -685,7 +699,7 @@ public partial class AccountViewModel : ObservableRecipient
 
         await LoadSavedAccountsListAsync();
 
-        if (CurrentAccount != null && CurrentAccount.GameUid == uid)
+        if (CurrentAccount != null && CurrentAccount.Stuid == uid)
         {
             if (SavedAccounts.Count > 0)
             {
