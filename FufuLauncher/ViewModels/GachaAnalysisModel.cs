@@ -27,6 +27,7 @@ public class LocalGachaData
 
 public partial class GachaAnalysisModel : ObservableObject
 {
+    private bool _isFetchingPoolMetadata;
     private readonly string _gachaDataPath;
     private readonly string _dbConnectionString;
     private readonly GachaService _gachaService;
@@ -1868,36 +1869,57 @@ public partial class GachaAnalysisModel : ObservableObject
 
     private async Task UpdateCollectionImagesAsync(ObservableCollection<GachaDisplayItem> collection, Dictionary<string, ScrapedMetadata> metaDict)
     {
+        if (collection == null || collection.Count == 0) return;
+
         var items = collection.ToList();
         var updates = new List<(GachaDisplayItem item, string imgUrl, string elementUrl)>();
 
-        foreach (var item in items)
+        await Task.Run(() =>
         {
-            ScrapedMetadata match = null;
-            if (metaDict.TryGetValue(item.Name, out var exactMatch)) match = exactMatch;
-            else match = metaDict.Values.FirstOrDefault(x => x.Name.Contains(item.Name) || item.Name.Contains(x.Name));
-
-            if (match != null)
+            foreach (var item in items)
             {
-                var imgUrl = !string.IsNullOrEmpty(match.ImgSrc) ? match.ImgSrc : null;
-                var elementUrl = (item.Type == "角色" || item.Type == "常驻") && !string.IsNullOrEmpty(match.ElementSrc) ? match.ElementSrc : null;
-                if (imgUrl != null || elementUrl != null)
-                    updates.Add((item, imgUrl, elementUrl));
-            }
-        }
+                ScrapedMetadata match = null;
+                if (metaDict.TryGetValue(item.Name, out var exactMatch))
+                {
+                    match = exactMatch;
+                }
+                else
+                {
+                    match = metaDict.Values.FirstOrDefault(x => 
+                        x.Name != null && item.Name != null && 
+                        (x.Name.Contains(item.Name) || item.Name.Contains(x.Name)));
+                }
 
-        App.MainWindow.DispatcherQueue.TryEnqueue(() =>
-        {
-            foreach (var (item, imgUrl, elementUrl) in updates)
-            {
-                if (imgUrl != null) item.ImageUrl = imgUrl;
-                if (elementUrl != null) item.ElementUrl = elementUrl;
+                if (match != null)
+                {
+                    var imgUrl = !string.IsNullOrEmpty(match.ImgSrc) ? match.ImgSrc : null;
+                    var elementUrl = (item.Type == "角色" || item.Type == "常驻") && !string.IsNullOrEmpty(match.ElementSrc) ? match.ElementSrc : null;
+                    if (imgUrl != null || elementUrl != null)
+                    {
+                        updates.Add((item, imgUrl, elementUrl));
+                    }
+                }
             }
         });
+
+        if (updates.Count > 0)
+        {
+            App.MainWindow.DispatcherQueue.TryEnqueue(() =>
+            {
+                foreach (var (item, imgUrl, elementUrl) in updates)
+                {
+                    if (imgUrl != null) item.ImageUrl = imgUrl;
+                    if (elementUrl != null) item.ElementUrl = elementUrl;
+                }
+            });
+        }
     }
 
     private async Task FetchGachaPoolMetadataAsync()
     {
+        if (_isFetchingPoolMetadata) return;
+        _isFetchingPoolMetadata = true;
+
         try
         {
             CrawlerStatus = "正在获取卡池元数据...";
@@ -1921,6 +1943,10 @@ public partial class GachaAnalysisModel : ObservableObject
         catch (Exception ex)
         {
             Debug.WriteLine($"[Gacha] 获取卡池元数据失败: {ex.Message}");
+        }
+        finally
+        {
+            _isFetchingPoolMetadata = false;
         }
     }
 
