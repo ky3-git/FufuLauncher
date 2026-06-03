@@ -1,3 +1,4 @@
+using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Reflection;
 using System.Windows.Input;
@@ -46,6 +47,7 @@ namespace FufuLauncher.ViewModels
         private readonly INavigationService _navigationService;
         private readonly IGameLauncherService _gameLauncherService;
         private readonly IFilePickerService _filePickerService;
+        public record MonitorItem(string DisplayName, int Index);
 
         [ObservableProperty] private ElementTheme _elementTheme;
         [ObservableProperty] private string _versionDescription;
@@ -102,6 +104,39 @@ namespace FufuLauncher.ViewModels
         [ObservableProperty] private string _webView2CacheSize;
         [ObservableProperty] private bool _isAutoCheckinEnabled;
         [ObservableProperty] private string _customGameExeName;
+        
+        [ObservableProperty] private ObservableCollection<MonitorItem> _availableMonitors = new();
+        [ObservableProperty] private MonitorItem _selectedMonitor;
+        [ObservableProperty] private int _launchArgsMonitorIndex = 0;
+
+        partial void OnLaunchArgsMonitorIndexChanged(int value)
+        {
+            ApplyPresetsToText();
+        }
+
+        partial void OnSelectedMonitorChanged(MonitorItem value)
+        {
+            if (value != null && LaunchArgsMonitorIndex != value.Index)
+            {
+                LaunchArgsMonitorIndex = value.Index;
+            }
+        }
+        
+        private void LoadMonitors()
+        {
+            AvailableMonitors.Clear();
+            AvailableMonitors.Add(new MonitorItem("默认 (不指定)", 0));
+    
+            var displayAreas = DisplayArea.FindAll();
+            for (int i = 0; i < displayAreas.Count; i++)
+            {
+                int index = i + 1;
+                AvailableMonitors.Add(new MonitorItem($"显示器 {index} ({displayAreas[i].OuterBounds.Width}x{displayAreas[i].OuterBounds.Height})", index));
+            }
+
+            SelectedMonitor = AvailableMonitors.FirstOrDefault(m => m.Index == LaunchArgsMonitorIndex) ?? AvailableMonitors.FirstOrDefault();
+        }
+        
         public IAsyncRelayCommand ResetGameExeNameCommand { get; }
 
         partial void OnIsAutoCheckinEnabledChanged(bool value)
@@ -571,6 +606,7 @@ namespace FufuLauncher.ViewModels
                 OnPropertyChanged(nameof(IsHideCheckinCardEnabled));
                 OnPropertyChanged(nameof(IsAcrylicOverlayEnabled));
                 OnPropertyChanged(nameof(IsAutoCheckinEnabled));
+                LoadMonitors();
             }
             finally
             {
@@ -975,7 +1011,7 @@ namespace FufuLauncher.ViewModels
         private void ParseLaunchParameters(string args)
         {
             if (string.IsNullOrWhiteSpace(args)) return;
-            
+    
             try
             {
                 if (args.Contains("-popupwindow"))
@@ -985,6 +1021,16 @@ namespace FufuLauncher.ViewModels
                 else
                 {
                     LaunchArgsWindowMode = WindowModeType.Normal;
+                }
+                
+                var monitorMatch = Regex.Match(args, @"-monitor\s+(\d+)");
+                if (monitorMatch.Success && int.TryParse(monitorMatch.Groups[1].Value, out int mIndex))
+                {
+                    LaunchArgsMonitorIndex = mIndex;
+                }
+                else
+                {
+                    LaunchArgsMonitorIndex = 0;
                 }
 
                 var parts = args.Split(' ');
@@ -1011,7 +1057,8 @@ namespace FufuLauncher.ViewModels
             currentArgs = Regex.Replace(currentArgs, @"-screen-width\s+\S+", "");
             currentArgs = Regex.Replace(currentArgs, @"-screen-height\s+\S+", "");
             currentArgs = Regex.Replace(currentArgs, @"-popupwindow", "");
-            
+            currentArgs = Regex.Replace(currentArgs, @"-monitor\s+\d+", "");
+    
             var sb = new System.Text.StringBuilder(currentArgs);
             if (!string.IsNullOrWhiteSpace(LaunchArgsWidth) && !string.IsNullOrWhiteSpace(LaunchArgsHeight))
             {
@@ -1020,6 +1067,10 @@ namespace FufuLauncher.ViewModels
             if (LaunchArgsWindowMode == WindowModeType.Popup)
             {
                 sb.Append(" -popupwindow");
+            }
+            if (LaunchArgsMonitorIndex > 0)
+            {
+                sb.Append($" -monitor {LaunchArgsMonitorIndex}");
             }
 
             var finalArgs = Regex.Replace(sb.ToString(), @"\s+", " ").Trim();

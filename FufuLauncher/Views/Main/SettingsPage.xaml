@@ -500,6 +500,24 @@
                             <Button Content="打开 HDR 设置" 
                                     Click="OnOpenHDRSettingsClick"/>
                         </StackPanel>
+                        <StackPanel Style="{StaticResource SettingItemStyle}" Margin="0,20,0,0">
+                            <TextBlock Text="目标显示器" 
+                                       Style="{ThemeResource BodyStrongTextBlockStyle}"
+                                       FontSize="14"/>
+                            <TextBlock Text="指定游戏启动时所在的显示器"
+                                       Style="{ThemeResource CaptionTextBlockStyle}"
+                                       Opacity="0.7"
+                                       Margin="0,2,0,12"/>
+                            <StackPanel Orientation="Horizontal" Spacing="12">
+                                <ComboBox ItemsSource="{x:Bind ViewModel.AvailableMonitors, Mode=OneWay}"
+                                          SelectedItem="{x:Bind ViewModel.SelectedMonitor, Mode=TwoWay}"
+                                          DisplayMemberPath="DisplayName"
+                                          Width="250"/>
+                                <Button Content="识别显示器" 
+                                        Click="OnIdentifyMonitorsClick" 
+                                        Style="{StaticResource PresetButtonStyle}"/>
+                            </StackPanel>
+                        </StackPanel>
                         <TextBlock Text="高级启动参数" 
                                    Style="{ThemeResource BodyStrongTextBlockStyle}"
                                    FontSize="14"
