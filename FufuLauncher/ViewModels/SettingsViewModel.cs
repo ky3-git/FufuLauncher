@@ -108,6 +108,14 @@ namespace FufuLauncher.ViewModels
         [ObservableProperty] private ObservableCollection<MonitorItem> _availableMonitors = new();
         [ObservableProperty] private MonitorItem _selectedMonitor;
         [ObservableProperty] private int _launchArgsMonitorIndex = 0;
+        
+        [ObservableProperty] private bool _isShowPresetCardEnabled;
+
+        partial void OnIsShowPresetCardEnabledChanged(bool value)
+        {
+            _ = _localSettingsService.SaveSettingAsync("IsShowPresetCardEnabled", value);
+            WeakReferenceMessenger.Default.Send(new CardVisibilityChangedMessage());
+        }
 
         partial void OnLaunchArgsMonitorIndexChanged(int value)
         {
@@ -766,6 +774,9 @@ namespace FufuLauncher.ViewModels
 
             var showTransformerJson = await _localSettingsService.ReadSettingAsync("ShowDailyNoteTransformer");
             ShowDailyNoteTransformer = (showTransformerJson == null || Convert.ToBoolean(showTransformerJson)) && activeCount < 3;
+            
+            var showPresetCardJson = await _localSettingsService.ReadSettingAsync("IsShowPresetCardEnabled");
+            IsShowPresetCardEnabled = showPresetCardJson != null && Convert.ToBoolean(showPresetCardJson);
     
             _isUpdatingDailyNote = false;
 

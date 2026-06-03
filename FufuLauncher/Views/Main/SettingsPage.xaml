@@ -237,6 +237,11 @@
                                           OffContent="显示"
                                           OnContent="隐藏"
                                           IsOn="{x:Bind ViewModel.IsHideDailyNoteCardEnabled, Mode=TwoWay}"/>
+                            
+                            <ToggleSwitch Header="显示快速预设卡片"
+                                          OffContent="隐藏"
+                                          OnContent="显示"
+                                          IsOn="{x:Bind ViewModel.IsShowPresetCardEnabled, Mode=TwoWay}"/>
                         </StackPanel>
 
                         <StackPanel Style="{StaticResource SettingItemStyle}" Margin="0,12,0,0">

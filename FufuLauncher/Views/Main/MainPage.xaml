@@ -6,6 +6,7 @@
     xmlns:bg="using:FufuLauncher.Services.Background"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:viewModels="using:FufuLauncher.ViewModels"
     x:Name="MainPageRoot"
     Background="Transparent"
     Loaded="Page_Loaded"
@@ -550,6 +551,52 @@
                     </Grid>
                 </Button>
             </StackPanel>
+            
+            <Border Grid.Row="1" Grid.Column="1"
+                    Visibility="{x:Bind ViewModel.PresetCardVisibility, Mode=OneWay}"
+                    Background="{StaticResource IosGlassBrush}"
+                    BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                    BorderThickness="1"
+                    CornerRadius="8"
+                    Padding="12"
+                    Width="240"
+                    HorizontalAlignment="Right"
+                    VerticalAlignment="Bottom"
+                    Margin="0,0,32,105"
+                    Translation="0,0,32">
+                <Border.Shadow>
+                    <ThemeShadow />
+                </Border.Shadow>
+                <StackPanel Spacing="8">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Grid.Column="0" Text="快速预设" FontSize="14" FontWeight="SemiBold" VerticalAlignment="Center" Foreground="White" Opacity="0.9"/>
+                        <Button Grid.Column="1" Command="{x:Bind ViewModel.OpenPresetManagerCommand}" Width="24" Height="24" Padding="0" Background="#1AFFFFFF" BorderThickness="0" CornerRadius="4" ToolTipService.ToolTip="管理">
+                            <FontIcon Glyph="&#xE713;" FontSize="11" Foreground="White"/>
+                        </Button>
+                    </Grid>
+                    <ItemsControl ItemsSource="{x:Bind ViewModel.PinnedPresets, Mode=OneWay}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate x:DataType="viewModels:PresetModel">
+                                <Grid Margin="0,2">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="24"/>
+                                    </Grid.ColumnDefinitions>
+                                    <Button Grid.Column="0" Command="{Binding ElementName=MainPageRoot, Path=ViewModel.QuickSwitchPresetCommand}" CommandParameter="{Binding}" IsEnabled="{x:Bind IsNotActive, Mode=OneWay}" HorizontalAlignment="Stretch" Background="#1AFFFFFF" BorderThickness="0" Foreground="White" CornerRadius="4" Padding="12,6">
+                                        <TextBlock Text="{x:Bind Name}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                    </Button>
+                                    <FontIcon Grid.Column="1" Glyph="&#xE73E;" FontSize="12" Foreground="White" VerticalAlignment="Center" HorizontalAlignment="Center" Visibility="{x:Bind IsActive, Converter={StaticResource BoolToVisibilityConverter}, Mode=OneWay}"/>
+                                </Grid>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                    <TextBlock Text="未固定任何预设" Visibility="{x:Bind ViewModel.IsPinnedPresetsEmpty, Mode=OneWay}" Opacity="0.6" FontSize="12" HorizontalAlignment="Center" Margin="0,8" Foreground="White"/>
+                </StackPanel>
+            </Border>
             
             <Button Grid.Row="1" Grid.Column="1"
                     Command="{x:Bind ViewModel.LaunchGameCommand}"

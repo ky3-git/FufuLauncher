@@ -38,6 +38,8 @@ namespace FufuLauncher.Views
         private async void StartBtn_Click(object sender, RoutedEventArgs e)
         {
             if (sender is Button btn) btn.IsEnabled = false;
+            StartBtn.IsEnabled = false;
+            if (FindName("AlternativeStartBtn") is Button altBtnDisable) altBtnDisable.IsEnabled = false;
 
             _statusText = new TextBlock { Text = "准备中...", TextWrapping = TextWrapping.Wrap };
             var sp = new StackPanel { Spacing = 16, Margin = new Thickness(0, 16, 0, 0) };
@@ -90,8 +92,58 @@ namespace FufuLauncher.Views
             finally
             {
                 if (Directory.Exists(cacheDir)) Directory.Delete(cacheDir, true);
-                if (sender is Button b) b.IsEnabled = true;
+                
+                StartBtn.IsEnabled = true;
+                if (FindName("AlternativeStartBtn") is Button altBtnEnable) altBtnEnable.IsEnabled = true;
             }
+        }
+        
+        private async void AlternativeStartBtn_Click(object sender, RoutedEventArgs e)
+        {
+            StartBtn.IsEnabled = false;
+            if (sender is Button btn) btn.IsEnabled = false;
+
+            var dialog = new ContentDialog
+            {
+                Title = "提示",
+                Content = "此方法将在开始时提前清空游戏的组件文件夹，适用于文件被占用导致切换失败的情况，清空后将重新开始一遍完整的切换服务器，确认继续？",
+                PrimaryButtonText = "确认",
+                CloseButtonText = "取消",
+                XamlRoot = XamlRoot
+            };
+
+            var result = await dialog.ShowAsync();
+            if (result != ContentDialogResult.Primary)
+            {
+                StartBtn.IsEnabled = true;
+                if (sender is Button b) b.IsEnabled = true;
+                return;
+            }
+
+            string cnPlugins = Path.Combine(_gameDir, GameConstants.CN_DATA_DIR, "Plugins");
+            string osPlugins = Path.Combine(_gameDir, GameConstants.OS_DATA_DIR, "Plugins");
+
+            try
+            {
+                if (Directory.Exists(cnPlugins)) Directory.Delete(cnPlugins, true);
+                if (Directory.Exists(osPlugins)) Directory.Delete(osPlugins, true);
+            }
+            catch (Exception ex)
+            {
+                var errDialog = new ContentDialog
+                {
+                    Title = "清理失败",
+                    Content = $"提前清理插件文件夹失败: {ex.Message}",
+                    CloseButtonText = "确定",
+                    XamlRoot = XamlRoot
+                };
+                await errDialog.ShowAsync();
+                StartBtn.IsEnabled = true;
+                if (sender is Button b) b.IsEnabled = true;
+                return;
+            }
+            
+            StartBtn_Click(sender, e);
         }
         
         private void UpdateProgressText(string msg)

@@ -1214,6 +1214,23 @@ public class PresetModel : ObservableObject
 
     [System.Text.Json.Serialization.JsonIgnore]
     public bool IsLocked { get; set; }
+
+    private bool _isActive;
+    [System.Text.Json.Serialization.JsonIgnore]
+    public bool IsActive
+    {
+        get => _isActive;
+        set
+        {
+            if (SetProperty(ref _isActive, value))
+            {
+                OnPropertyChanged(nameof(IsNotActive));
+            }
+        }
+    }
+
+    [System.Text.Json.Serialization.JsonIgnore]
+    public bool IsNotActive => !IsActive;
 }
 
 public class VirtualKeyOption

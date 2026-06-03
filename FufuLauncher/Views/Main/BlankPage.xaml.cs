@@ -615,7 +615,7 @@ private async void FpsOverlayToggle_Toggled(object sender, RoutedEventArgs e)
             var hWnd = WindowNative.GetWindowHandle(newWindow);
             var winId = Win32Interop.GetWindowIdFromWindow(hWnd);
             var appWindow = AppWindow.GetFromWindowId(winId);
-            appWindow.Resize(new Windows.Graphics.SizeInt32(600, 400));
+            appWindow.Resize(new Windows.Graphics.SizeInt32(1280, 720));
 
             var rootFrame = new Frame();
             rootFrame.Navigate(typeof(AdvancedServerSwitchPage), new SwitchPageParams 
