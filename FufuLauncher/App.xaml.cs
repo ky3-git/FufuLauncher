@@ -59,7 +59,7 @@ public partial class App : Application
         return service;
     }
 
-    public static WindowEx MainWindow { get; } = new MainWindow();
+    public static WindowEx MainWindow { get; private set; }
 
     public static UIElement? AppTitlebar
     {
@@ -327,6 +327,7 @@ public partial class App : Application
             // Initialize default theme to Dark if not set
             await SetDefaultThemeAsync();
 
+            MainWindow = new MainWindow();
             if (MainWindow is MainWindow mainWindow)
             {
                 await mainWindow.InitializeWindowSizeAsync();
