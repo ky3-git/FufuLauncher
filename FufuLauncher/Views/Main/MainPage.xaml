@@ -698,11 +698,9 @@
                             BorderThickness="1"
                             CornerRadius="24"/>
 
-                    <Border x:Name="LaunchButtonOverlayBorder" CornerRadius="24">
-                        <Border.Background>
-                            <SolidColorBrush Color="#0078D7" Opacity="0.4"/>
-                        </Border.Background>
-                    </Border>
+                    <Border x:Name="LaunchButtonOverlayBorder" 
+                            CornerRadius="24" 
+                            Background="{x:Bind ViewModel.LaunchButtonOverlayBrush, Mode=OneWay}" />
 
                     <StackPanel Orientation="Horizontal" Spacing="12" Padding="36,18">
                         <ProgressRing Width="20" Height="20"
