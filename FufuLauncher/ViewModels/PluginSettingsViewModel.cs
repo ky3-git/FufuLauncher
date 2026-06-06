@@ -155,7 +155,7 @@ public partial class PluginSettingsViewModel : ObservableObject
     {
         if (_hasCheckedHwid && _isHwidAuthorized) return true;
 
-        string hwid = SystemEnvironmentHelper.GetHwid();
+        string hwid = await Task.Run(() => SystemEnvironmentHelper.GetHwid());
         
         System.Diagnostics.Debug.WriteLine($"[HWID_DEBUG] 本地获取到的HWID: [{hwid}]");
         File.WriteAllText("hwid_debug.txt", $"[HWID_DEBUG] Time: {DateTime.Now}\nLocal HWID: [{hwid}]\n");
