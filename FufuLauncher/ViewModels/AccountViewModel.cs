@@ -130,12 +130,10 @@ public partial class AccountViewModel : ObservableRecipient
             IsLoadingUserInfo = true;
             StatusMessage = "正在加载用户信息...";
 
-            var activeFileObj = await _localSettingsService.ReadSettingAsync("ActiveConfigFile");
-            string activeFile = activeFileObj?.ToString() ?? "config.json";
-            var configPath = Path.Combine(Helpers.AppPaths.DataDir, activeFile);
+            var configPath = GetCurrentConfigPath();
 
             Debug.WriteLine($"========== [LoadUserInfo] 开始加载 ==========");
-            Debug.WriteLine($"[LoadUserInfo] 目标配置文件: {activeFile}");
+            Debug.WriteLine($"[LoadUserInfo] 目标配置文件: {configPath}");
             Debug.WriteLine($"[LoadUserInfo] 完整路径: {configPath}");
             Debug.WriteLine($"[LoadUserInfo] 文件是否存在: {File.Exists(configPath)}");
 
@@ -248,10 +246,16 @@ public partial class AccountViewModel : ObservableRecipient
         try
         {
             var configPath = GetCurrentConfigPath();
-            if (!File.Exists(configPath)) return;
+            if (!File.Exists(configPath))
+            {
+                StatusMessage = "未找到登录信息";
+                WeakReferenceMessenger.Default.Send(new NotificationMessage("复制失败", "未找到登录信息", NotificationType.Error));
+                return;
+            }
 
             var json = await File.ReadAllTextAsync(configPath);
             var config = JsonSerializer.Deserialize<Config>(json, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+
             if (!string.IsNullOrEmpty(config?.Account?.Cookie))
             {
                 var dataPackage = new Windows.ApplicationModel.DataTransfer.DataPackage();
@@ -261,7 +265,9 @@ public partial class AccountViewModel : ObservableRecipient
                 WeakReferenceMessenger.Default.Send(new NotificationMessage("复制成功", "Cookie 已成功复制到剪贴板", NotificationType.Success));
                 return;
             }
+
             StatusMessage = "未找到有效的 Cookie";
+            WeakReferenceMessenger.Default.Send(new NotificationMessage("复制失败", "未找到有效的 Cookie", NotificationType.Error));
         }
         catch (Exception ex)
         {
