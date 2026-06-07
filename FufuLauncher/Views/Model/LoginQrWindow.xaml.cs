@@ -18,9 +18,10 @@ using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media.Imaging;
 using Microsoft.Web.WebView2.Core;
 using MihoyoBBS; 
-using QRCoder;
-
+using QRCoder;  
+ 
 namespace FufuLauncher.Views;
+
 
 public sealed partial class LoginQrWindow : Window
 {
