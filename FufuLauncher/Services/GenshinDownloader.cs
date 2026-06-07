@@ -136,11 +136,20 @@ namespace FufuLauncher.Services
                 MoveFilesRecursively(new DirectoryInfo(stagingPath), new DirectoryInfo(installPath));
                 try { Directory.Delete(stagingPath, true); } catch { }
 
-                await File.WriteAllTextAsync(Path.Combine(installPath, "gid_ver"), versionTag, token);
-                if (downloadBaseGame || !File.Exists(Path.Combine(installPath, "config.ini")))
+                string gidVerPath = Path.Combine(installPath, "gid_ver");
+                string configPath = Path.Combine(installPath, "config.ini");
+
+                await File.WriteAllTextAsync(gidVerPath, versionTag, token);
+
+                if (File.Exists(configPath))
                 {
-                    string configContent = $"[general]\ngame_version={versionTag}\nchannel=1\nsub_channel=1\ncps=mihoyo\n";
-                    await File.WriteAllTextAsync(Path.Combine(installPath, "config.ini"), configContent, token);
+                    var iniFile = new Helpers.IniFile(configPath);
+                    iniFile.WriteValue("General", "game_version", versionTag);
+                }
+                else
+                {
+                    string configContent = $"[General]\ngame_version={versionTag}\nchannel=1\nsub_channel=1\ncps=mihoyo\n";
+                    await File.WriteAllTextAsync(configPath, configContent, token);
                 }
 
                 Log?.Invoke("全部完成！");
