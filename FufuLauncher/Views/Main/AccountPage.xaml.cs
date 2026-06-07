@@ -34,11 +34,17 @@ public sealed partial class AccountPage : Page
     private async void Page_Loaded(object sender, RoutedEventArgs e)
     {
         EntranceStoryboard.Begin();
-
         await Task.Delay(600);
-        await ViewModel.LoadUserInfoAsync();
+        await ViewModel.LoadUserInfoAsync(); 
     }
-
+    protected override async void OnNavigatedTo(NavigationEventArgs e)
+    {
+        base.OnNavigatedTo(e);
+        if (DataContext is AccountViewModel vm)
+        {
+            await vm.RefreshDataAsync();
+        }
+    }
     private void AvatarPicture_Loaded(object sender, RoutedEventArgs e)
     {
         AvatarEntranceStoryboard.Begin();
