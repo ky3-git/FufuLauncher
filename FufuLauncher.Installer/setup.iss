@@ -1,5 +1,5 @@
 #define AppName       "FufuLauncher"
-#define AppVersion    "1.2.3.1"
+#define AppVersion    "1.2.3.2"
 #define AppPublisher  "FufuLauncher"
 #define AppExe        "FufuLauncher.exe"
 #define AppId         "{{A7B2C3D4-E5F6-7890-AB12-CD34EF567890}"
@@ -29,7 +29,7 @@ ShowLanguageDialog=no
 ArchitecturesAllowed=x64compatible
 ArchitecturesInstallIn64BitMode=x64compatible
 PrivilegesRequired=lowest
-MinVersion=10.0.19041
+MinVersion=10.0.14393
 
 OutputDir={#OutDir}
 OutputBaseFilename={#AppName}_Setup_v{#AppVersion}

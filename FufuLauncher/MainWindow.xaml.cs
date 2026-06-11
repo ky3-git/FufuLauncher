@@ -664,10 +664,25 @@ public sealed partial class MainWindow : WindowEx
         }
     }
 
+    private void CleanupWindowResources()
+    {
+        _memoryOptimizationTimer?.Stop();
+        _periodicMemoryTimer?.Stop();
+        _messageDismissTimer?.Stop();
+        _announcementCheckTimer?.Stop();
+        _slideshowTimer?.Stop();
+        _networkMonitorService.Stop();
+        DisposeGlobalBackgroundPlayer();
+        GlobalBackgroundImage.Source = null;
+        WeakReferenceMessenger.Default.UnregisterAll(this);
+        settings.ColorValuesChanged -= Settings_ColorValuesChanged;
+    }
+
     private async void ExitApplication()
     {
         await SaveWindowSizeAsync();
         _isExit = true;
+        CleanupWindowResources();
         TrayIcon.Dispose();
         Close();
     }
@@ -680,6 +695,7 @@ public sealed partial class MainWindow : WindowEx
         if (!_isMainUiLoaded)
         {
             _isExit = true;
+            CleanupWindowResources();
             TrayIcon.Dispose();
             Close();
             return;
@@ -694,6 +710,7 @@ public sealed partial class MainWindow : WindowEx
         {
             await SaveWindowSizeAsync();
             _isExit = true;
+            CleanupWindowResources();
             TrayIcon.Dispose();
             Close();
         }
@@ -895,7 +912,22 @@ public sealed partial class MainWindow : WindowEx
         }
     }
 
-private async Task ApplyGlobalBackgroundAsync(BackgroundRenderResult? result)
+    private void DisposeGlobalBackgroundPlayer()
+    {
+        try
+        {
+            _globalBackgroundPlayer?.Pause();
+            _globalBackgroundPlayer?.Dispose();
+        }
+        catch { }
+        finally
+        {
+            _globalBackgroundPlayer = null;
+            GlobalBackgroundVideo.SetMediaPlayer(null);
+        }
+    }
+
+    private async Task ApplyGlobalBackgroundAsync(BackgroundRenderResult? result)
 {
     if (result == null) 
     { 
@@ -919,7 +951,9 @@ private async Task ApplyGlobalBackgroundAsync(BackgroundRenderResult? result)
         if (result.IsVideo)
         {
             _isVideoBackground = true;
+            GlobalBackgroundImage.Source = null;
             GlobalBackgroundImage.Visibility = Visibility.Collapsed;
+            GlobalBackgroundVideo.Visibility = Visibility.Visible;
             
             if (_globalBackgroundPlayer == null)
             {
@@ -932,6 +966,8 @@ private async Task ApplyGlobalBackgroundAsync(BackgroundRenderResult? result)
             }
             if (!ReferenceEquals(_globalBackgroundPlayer.Source, result.VideoSource))
             {
+                _globalBackgroundPlayer.Pause();
+                _globalBackgroundPlayer.Source = null;
                 _globalBackgroundPlayer.Source = result.VideoSource;
             }
 
@@ -939,14 +975,12 @@ private async Task ApplyGlobalBackgroundAsync(BackgroundRenderResult? result)
             {
                 _globalBackgroundPlayer.Play();
             }
-            
-            GlobalBackgroundVideo.Visibility = Visibility.Visible;
         }
         else
         {
             var wasVideoBackground = _isVideoBackground;
             _isVideoBackground = false;
-            _globalBackgroundPlayer?.Pause();
+            DisposeGlobalBackgroundPlayer();
             GlobalBackgroundVideo.Visibility = Visibility.Collapsed;
             
             GlobalBackgroundImage.Opacity = 0.0;
@@ -1024,8 +1058,7 @@ private async Task ApplyGlobalBackgroundAsync(BackgroundRenderResult? result)
             GlobalBackgroundImage.Visibility = Visibility.Collapsed;
             GlobalBackgroundVideo.Source = null;
             GlobalBackgroundVideo.Visibility = Visibility.Collapsed;
-            _globalBackgroundPlayer?.Pause();
-            _globalBackgroundPlayer = null;
+            DisposeGlobalBackgroundPlayer();
         });
     }
 

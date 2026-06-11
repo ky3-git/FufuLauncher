@@ -160,24 +160,11 @@ namespace FufuLauncher.Services.Background
             }
         }
 
-        private async Task<BackgroundRenderResult> CreateVideoResultAsync(string filePath)
+        private Task<BackgroundRenderResult> CreateVideoResultAsync(string filePath)
         {
-            var bytes = await File.ReadAllBytesAsync(filePath);
-            var stream = new InMemoryRandomAccessStream();
-            await stream.WriteAsync(bytes.AsBuffer());
-            stream.Seek(0);
-
-            var contentType = Path.GetExtension(filePath).ToLowerInvariant() switch
-            {
-                ".webm" => "video/webm",
-                ".mkv" => "video/x-matroska",
-                ".avi" => "video/x-msvideo",
-                ".mov" => "video/quicktime",
-                _ => "video/mp4"
-            };
-
-            var source = MediaSource.CreateFromStream(stream, contentType);
-            return new BackgroundRenderResult { VideoSource = source, VideoStream = stream, IsVideo = true };
+            var source = MediaSource.CreateFromUri(new Uri(filePath));
+            var result = new BackgroundRenderResult { VideoSource = source, VideoStream = null, IsVideo = true };
+            return Task.FromResult(result);
         }
 
         private async Task<string> ResolveBackgroundApiUrlAsync(ServerType server)

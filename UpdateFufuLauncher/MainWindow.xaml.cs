@@ -48,7 +48,7 @@ namespace Updater
             public int AnimationId;
         }
         
-        private const string AppVersion = "1.2.3.1";
+        private const string AppVersion = "1.2.3.2";
 
         private static readonly HttpClient _httpClient = new(new HttpClientHandler
         {
@@ -168,16 +168,25 @@ namespace Updater
             try
             {
                 string localJsonPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Update.json");
-                if (File.Exists(localJsonPath))
-                {
-                    string localContent = await File.ReadAllTextAsync(localJsonPath);
-                }
-
                 SubtitleText.Text = "请求API更新配置...";
                 string apiUrl = "https://philia093.cyou/Update.json";
-                var apiResponse = await _httpClient.GetStringAsync(apiUrl);
+                string updateContent;
+                try
+                {
+                    updateContent = await _httpClient.GetStringAsync(apiUrl);
+                }
+                catch (HttpRequestException)
+                {
+                    if (!File.Exists(localJsonPath))
+                    {
+                        throw;
+                    }
+
+                    SubtitleText.Text = "API请求失败，读取本地更新配置...";
+                    updateContent = await File.ReadAllTextAsync(localJsonPath);
+                }
                 
-                JObject updateJson = JObject.Parse(apiResponse);
+                JObject updateJson = JObject.Parse(updateContent);
                 string remoteVersionStr = updateJson.GetValue("version", StringComparison.OrdinalIgnoreCase)?.ToString();
 
                 if (!Version.TryParse(AppVersion, out Version currentVersion) || 
