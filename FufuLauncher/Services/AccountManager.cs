@@ -2,6 +2,7 @@
 using FufuLauncher.Contracts.Services;
 using FufuLauncher.Models;
 using Microsoft.Extensions.DependencyInjection;
+using MihoyoBBS;
 
 namespace FufuLauncher.Services;
 
@@ -29,6 +30,12 @@ public class AccountManager
     public async Task InitializeAsync()
     {
         await LoadAccountListAsync();
+
+        // 检查并迁移旧账号数据
+        if (HasLegacyAccounts())
+        {
+            await MigrateLegacyAccountsAsync();
+        }
     }
 
 
@@ -225,5 +232,245 @@ public class AccountManager
             _lock.Release();
         }
     }
+
+    #region 旧账号数据迁移
+
+    private static Dictionary<string, string> ParseCookieString(string cookieString)
+    {
+        var cookieDict = new Dictionary<string, string>();
+        if (string.IsNullOrWhiteSpace(cookieString))
+            return cookieDict;
+
+        var parts = cookieString.Split(';');
+        foreach (var part in parts)
+        {
+            var trimmed = part.Trim();
+            if (string.IsNullOrEmpty(trimmed))
+                continue;
+
+            var separatorIndex = trimmed.IndexOf('=');
+            if (separatorIndex > 0)
+            {
+                var key = trimmed.Substring(0, separatorIndex).Trim();
+                var value = trimmed.Substring(separatorIndex + 1).Trim();
+                if (!string.IsNullOrEmpty(key))
+                    cookieDict[key] = value;
+            }
+        }
+        return cookieDict;
+    }
+
+    private bool HasLegacyAccounts()
+    {
+        if (!Directory.Exists(_dataDir))
+            return false;
+
+        return Directory.GetFiles(_dataDir, "config*.json")
+            .Any(f =>
+            {
+                var name = Path.GetFileName(f);
+                return !name.Equals("config.json", StringComparison.OrdinalIgnoreCase) &&
+                       !name.Equals("config.lab.json", StringComparison.OrdinalIgnoreCase) &&
+                       !name.Equals("accounts.json", StringComparison.OrdinalIgnoreCase);
+            });
+    }
+
+    private static string DetermineServerTypeByFileName(string fileName)
+    {
+        return fileName.Contains(".lab", StringComparison.OrdinalIgnoreCase) ? "os" : "cn";
+    }
+
+    private async Task MigrateLegacyAccountsAsync()
+    {
+        System.Diagnostics.Debug.WriteLine("[AccountManager] 开始迁移旧账号数据...");
+
+        try
+        {
+            var backupDir = Path.Combine(_dataDir, "legacy_accounts_backup");
+            Directory.CreateDirectory(backupDir);
+
+            var subAccountFiles = new List<string>();
+            if (Directory.Exists(_dataDir))
+            {
+                subAccountFiles.AddRange(
+                    Directory.GetFiles(_dataDir, "config*.json")
+                        .Where(f =>
+                        {
+                            var name = Path.GetFileName(f);
+                            return !name.Equals("config.json", StringComparison.OrdinalIgnoreCase) &&
+                                   !name.Equals("config.lab.json", StringComparison.OrdinalIgnoreCase) &&
+                                   !name.Equals("accounts.json", StringComparison.OrdinalIgnoreCase);
+                        })
+                );
+            }
+
+            var processed = new HashSet<string>();
+            int migratedCount = 0;
+
+            foreach (var configFile in subAccountFiles)
+            {
+                try
+                {
+                    var fileName = Path.GetFileName(configFile);
+                    var json = await File.ReadAllTextAsync(configFile);
+                    var config = JsonSerializer.Deserialize<Config>(json,
+                        new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+
+                    if (config?.Account == null || string.IsNullOrWhiteSpace(config.Account.Cookie))
+                        continue;
+
+                    var cookieDict = ParseCookieString(config.Account.Cookie);
+                    if (cookieDict.Count == 0)
+                        continue;
+
+                    string stuid = config.Account.Stuid;
+                    if (string.IsNullOrWhiteSpace(stuid))
+                    {
+                        if (cookieDict.TryGetValue("ltuid", out var ltuid))
+                            stuid = ltuid;
+                        else if (cookieDict.TryGetValue("ltuid_v2", out var ltuidV2))
+                            stuid = ltuidV2;
+                    }
+
+                    if (string.IsNullOrWhiteSpace(stuid))
+                        continue;
+
+                    if (processed.Contains(stuid))
+                        continue;
+
+                    string serverType = DetermineServerTypeByFileName(fileName);
+                    string accountId = $"{serverType}_{stuid}";
+
+                    if (_accountList.Accounts.Any(a => a.Id == accountId))
+                    {
+                        System.Diagnostics.Debug.WriteLine($"[AccountManager] 账号 {accountId} 已存在，跳过迁移");
+                        processed.Add(stuid);
+                        continue;
+                    }
+
+                    string cookieFileName = $"{accountId}.json";
+                    string cookiePath = Path.Combine(_cookiesDir, cookieFileName);
+                    var cookieJson = JsonSerializer.Serialize(cookieDict);
+                    await File.WriteAllTextAsync(cookiePath, cookieJson);
+
+                    var entry = new AccountEntry
+                    {
+                        Id = accountId,
+                        Stuid = stuid,
+                        ServerType = serverType,
+                        CookieFilePath = cookieFileName,
+                        Nickname = config.Display?.Nickname ?? "",
+                        AvatarUrl = config.Display?.AvatarUrl ?? "",
+                        LastLoginTime = DateTime.Now
+                    };
+
+                    _accountList.Accounts.Add(entry);
+                    processed.Add(stuid);
+                    migratedCount++;
+
+                    System.Diagnostics.Debug.WriteLine(
+                        $"[AccountManager] 已迁移账号: {accountId} ({entry.Nickname}) [{serverType}]");
+                }
+                catch (Exception ex)
+                {
+                    System.Diagnostics.Debug.WriteLine(
+                        $"[AccountManager] 迁移文件 {configFile} 失败: {ex.Message}");
+                }
+            }
+
+            if (migratedCount > 0)
+            {
+                await SaveAccountListAsync();
+                System.Diagnostics.Debug.WriteLine(
+                    $"[AccountManager] 迁移完成，共迁移 {migratedCount} 个账号");
+
+                await MigrateActiveAccountAsync();
+            }
+            else
+            {
+                System.Diagnostics.Debug.WriteLine("[AccountManager] 未找到需要迁移的账号");
+            }
+
+            var allConfigFiles = Directory.GetFiles(_dataDir, "config*.json")
+                .Where(f => !Path.GetFileName(f).Equals("accounts.json", StringComparison.OrdinalIgnoreCase))
+                .ToList();
+
+            foreach (var file in allConfigFiles)
+            {
+                try
+                {
+                    var backupFile = Path.Combine(backupDir, Path.GetFileName(file));
+                    if (File.Exists(backupFile))
+                        File.Delete(backupFile);
+                    File.Move(file, backupFile);
+                }
+                catch (Exception ex)
+                {
+                    System.Diagnostics.Debug.WriteLine(
+                        $"[AccountManager] 移动文件 {file} 失败: {ex.Message}");
+                }
+            }
+
+            System.Diagnostics.Debug.WriteLine(
+                $"[AccountManager] 迁移流程结束，旧配置文件已移动到 legacy_accounts_backup/");
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"[AccountManager] 迁移过程发生错误: {ex.Message}");
+        }
+    }
+
+    private async Task MigrateActiveAccountAsync()
+    {
+        try
+        {
+            var settings = App.GetService<ILocalSettingsService>();
+
+            bool isInternationalAccount = false;
+            try
+            {
+                var isOsObj = await settings.ReadSettingAsync("IsInternationalAccount");
+                isInternationalAccount = isOsObj is bool b && b;
+            }
+            catch { }
+
+            string mainConfigPath = isInternationalAccount
+                ? Path.Combine(_dataDir, "config.lab.json")
+                : Path.Combine(_dataDir, "config.json");
+
+            if (!File.Exists(mainConfigPath))
+                return;
+
+            var json = await File.ReadAllTextAsync(mainConfigPath);
+            var config = JsonSerializer.Deserialize<Config>(json,
+                new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+
+            if (config?.Account == null || string.IsNullOrWhiteSpace(config.Account.Stuid))
+                return;
+
+            string stuid = config.Account.Stuid;
+            string serverType = isInternationalAccount ? "os" : "cn";
+            string accountId = $"{serverType}_{stuid}";
+
+            if (_accountList.Accounts.Any(a => a.Id == accountId))
+            {
+                await SetActiveAccountIdAsync(accountId);
+                System.Diagnostics.Debug.WriteLine(
+                    $"[AccountManager] 已迁移活跃账号: {accountId}");
+            }
+            else
+            {
+                System.Diagnostics.Debug.WriteLine(
+                    $"[AccountManager] 旧活跃账号 {accountId} 不在迁移列表中，使用默认账号");
+            }
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine(
+                $"[AccountManager] 迁移活跃账号失败: {ex.Message}");
+        }
+    }
+
+    #endregion
 
 }
