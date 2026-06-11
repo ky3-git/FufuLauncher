@@ -444,7 +444,7 @@ private void OnOpenGachaAnalysisClick(object sender, RoutedEventArgs e)
     {
         _isInfoCardExpanded = isExpanded;
         var targetHeight = isExpanded ? 275 : 157;
-        var targetCornerRadius = isExpanded ? new CornerRadius(12, 12, 0, 0) : new CornerRadius(12);
+        var targetCornerRadius = new CornerRadius(12);
 
         var sb = new Storyboard();
         var duration = new Duration(TimeSpan.FromMilliseconds(350));

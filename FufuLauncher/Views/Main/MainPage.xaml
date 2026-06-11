@@ -192,7 +192,7 @@
                             Grid.Row="0"
                             Margin="0"
                             Background="#20000000"
-                            CornerRadius="12,12,0,0">
+                            CornerRadius="12">
                             <Grid
                                 x:Name="BannerViewport"
                                 Background="Transparent"
