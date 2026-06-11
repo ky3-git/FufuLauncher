@@ -28,6 +28,8 @@ public partial class GachaAnalysisModel : ObservableObject
 {
 
     private bool _isFetchingPoolMetadata;
+    private Dictionary<string, int> _charNameToIdMap;
+    private Dictionary<string, int> _weaponNameToIdMap;
     private readonly string _gachaDataPath;
     private readonly string _dbConnectionString;
     private readonly GachaService _gachaService;
@@ -2157,16 +2159,59 @@ private async Task ImportUigfAsync()
         {
             CrawlerStatus = "正在获取卡池元数据...";
 
-            var charMetadata = await _httpClient.GetStringAsync(ApiEndpoints.GachaCharacterMetadataUrl);
-            var charPools = JsonSerializer.Deserialize<List<GachaPoolMetadata>>(charMetadata);
+            if (_charNameToIdMap == null)
+                _charNameToIdMap = await BuildNameToIdMapAsync("char");
+            if (_weaponNameToIdMap == null)
+                _weaponNameToIdMap = await BuildNameToIdMapAsync("weapon");
 
-            var weaponMetadata = await _httpClient.GetStringAsync(ApiEndpoints.GachaWeaponMetadataUrl);
-            var weaponPools = JsonSerializer.Deserialize<List<GachaPoolMetadata>>(weaponMetadata);
+            var response = await _httpClient.GetStringAsync(ApiEndpoints.WishHistoryUrl);
+            var data = JsonSerializer.Deserialize<WishHistoryResponse>(response);
+            if (data?.Result == null || data.Weapon == null) return;
 
-            await SavePoolMetadataToDbAsync(charPools, "301");
-            await SavePoolMetadataToDbAsync(weaponPools, "302");
+            var allPools = new List<(GachaPoolMetadata pool, string poolType)>();
 
-            CrawlerStatus = $"卡池元数据更新完成";
+            var charPoolsRaw = AssignVersionSuffixes(data.Result);
+            foreach (var (item, displayVersion) in charPoolsRaw)
+            {
+                var period = GetVersionPeriod(item.Version);
+                var poolType = period == "混池" ? "500" : "301";
+                var (startTime, endTime) = ParseTimeRange(item.Time, period);
+
+                allPools.Add((new GachaPoolMetadata
+                {
+                    Version = displayVersion,
+                    Start = startTime,
+                    End = endTime,
+                    Items = ConvertNamesToItems(item.Star5Role, item.Star4Role, _charNameToIdMap, data.AvatarList)
+                }, poolType));
+            }
+
+            var weaponPoolsRaw = AssignVersionSuffixes(data.Weapon);
+            foreach (var (item, displayVersion) in weaponPoolsRaw)
+            {
+                var period = GetVersionPeriod(item.Version);
+                var poolType = period == "混池" ? "500" : "302";
+                var (startTime, endTime) = ParseTimeRange(item.Time, period);
+
+                allPools.Add((new GachaPoolMetadata
+                {
+                    Version = displayVersion,
+                    Start = startTime,
+                    End = endTime,
+                    Items = ConvertNamesToItems(item.Star5Role, item.Star4Role, _weaponNameToIdMap, data.AvatarList)
+                }, poolType));
+            }
+
+            var grouped = allPools.GroupBy(p => p.poolType);
+            foreach (var group in grouped)
+            {
+                await SavePoolMetadataToDbAsync(group.Select(g => g.pool).ToList(), group.Key);
+            }
+
+            var count301 = allPools.Count(p => p.poolType == "301");
+            var count302 = allPools.Count(p => p.poolType == "302");
+            var count500 = allPools.Count(p => p.poolType == "500");
+            CrawlerStatus = $"卡池元数据更新完成 (角色{count301}条, 武器{count302}条, 集录{count500}条)";
 
             if (_cachedCharacterLogs.Count + _cachedWeaponLogs.Count > 0)
             {
@@ -2181,6 +2226,113 @@ private async Task ImportUigfAsync()
         {
             _isFetchingPoolMetadata = false;
         }
+    }
+
+    private async Task<Dictionary<string, int>> BuildNameToIdMapAsync(string type)
+    {
+        var url = type == "char"
+            ? ApiEndpoints.CalculateAvatarListUrl
+            : ApiEndpoints.CalculateWeaponListUrl;
+
+        object payload;
+        if (type == "char")
+            payload = new { page = 1, size = 1000, is_all = true };
+        else
+            payload = new { page = 1, size = 1000, weapon_levels = new[] { 1, 2, 3, 4, 5 } };
+
+        var items = await FetchCalculatorListAsync(url, payload, null, type);
+        var map = new Dictionary<string, int>();
+        foreach (var i in items)
+        {
+            if (!string.IsNullOrEmpty(i.Name) && !map.ContainsKey(i.Name))
+                map[i.Name] = int.Parse(i.ItemId);
+        }
+        return map;
+    }
+
+    private static string GetVersionPeriod(string fullVersion)
+    {
+        if (fullVersion.Contains("混池")) return "混池";
+        if (fullVersion.Contains("上半")) return "上半";
+        if (fullVersion.Contains("下半")) return "下半";
+        if (fullVersion.Contains("中")) return "下半";
+        return "";
+    }
+
+    private static List<(WishBannerItem Item, string DisplayVersion)> AssignVersionSuffixes(List<WishBannerItem> items)
+    {
+        var result = new List<(WishBannerItem, string)>();
+        var versionCounts = new Dictionary<string, int>();
+
+        foreach (var item in items)
+        {
+            versionCounts.TryGetValue(item.Version, out var count);
+            count++;
+            versionCounts[item.Version] = count;
+
+            var displayVersion = count > 1 ? $"{item.Version}-{count}" : item.Version;
+            result.Add((item, displayVersion));
+        }
+
+        return result;
+    }
+
+    private static (string startTime, string endTime) ParseTimeRange(string timeRange, string period)
+    {
+        var parts = timeRange.Split('-');
+        var startDate = parts[0].Trim();
+        var endDate = parts[1].Trim();
+
+        if (period == "上半")
+            return ($"{startDate} 07:00:00", $"{endDate} 17:59:59");
+
+        return ($"{startDate} 18:00:00", $"{endDate} 14:59:59");
+    }
+
+    private static List<GachaPoolItem> ConvertNamesToItems(
+        List<string> star5Names, List<string> star4Names,
+        Dictionary<string, int> nameToIdMap,
+        Dictionary<string, string> avatarList)
+    {
+        var items = new List<GachaPoolItem>();
+
+        foreach (var name in star5Names)
+        {
+            if (nameToIdMap.TryGetValue(name, out var itemId))
+            {
+                items.Add(new GachaPoolItem
+                {
+                    ItemId = itemId,
+                    Name = name,
+                    ImageUrl = avatarList.TryGetValue(name, out var url) ? url : "",
+                    RankType = 5
+                });
+            }
+            else
+            {
+                Debug.WriteLine($"[Gacha] 未找到5星物品映射: {name}");
+            }
+        }
+
+        foreach (var name in star4Names)
+        {
+            if (nameToIdMap.TryGetValue(name, out var itemId))
+            {
+                items.Add(new GachaPoolItem
+                {
+                    ItemId = itemId,
+                    Name = name,
+                    ImageUrl = avatarList.TryGetValue(name, out var url) ? url : "",
+                    RankType = 4
+                });
+            }
+            else
+            {
+                Debug.WriteLine($"[Gacha] 未找到4星物品映射: {name}");
+            }
+        }
+
+        return items;
     }
 
     private async Task SavePoolMetadataToDbAsync(List<GachaPoolMetadata> pools, string poolType)
@@ -2272,18 +2424,18 @@ private async Task ImportUigfAsync()
         if (!DateTime.TryParse(item.Time, out var pullTime))
             return PityStatus.None;
 
-        var pool = pools.FirstOrDefault(p =>
+        var matchedPools = pools.Where(p =>
         {
             if (!DateTime.TryParse(p.Start, out var startTime) ||
                 !DateTime.TryParse(p.End, out var endTime))
                 return false;
             return pullTime >= startTime && pullTime <= endTime;
-        });
+        }).ToList();
 
-        if (pool == null)
+        if (matchedPools.Count == 0)
             return PityStatus.None;
 
-        var isUpItem = pool.Items.Any(p => p.ItemId.ToString() == item.ItemId);
+        var isUpItem = matchedPools.Any(pool => pool.Items.Any(p => p.ItemId.ToString() == item.ItemId));
 
         if (item.RankType == "5")
         {
