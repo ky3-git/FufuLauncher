@@ -192,3 +192,36 @@ public enum PityStatus
     Guaranteed,
     Up
 }
+
+public class WishHistoryResponse
+{
+    [JsonPropertyName("code")]
+    public int Code { get; set; }
+
+    [JsonPropertyName("result")]
+    public List<WishBannerItem> Result { get; set; }
+
+    [JsonPropertyName("weapon")]
+    public List<WishBannerItem> Weapon { get; set; }
+
+    [JsonPropertyName("avatar_list")]
+    public Dictionary<string, string> AvatarList { get; set; }
+}
+
+public class WishBannerItem
+{
+    [JsonPropertyName("avatar")]
+    public string Avatar { get; set; }
+
+    [JsonPropertyName("version")]
+    public string Version { get; set; }
+
+    [JsonPropertyName("star5_role")]
+    public List<string> Star5Role { get; set; }
+
+    [JsonPropertyName("star4_role")]
+    public List<string> Star4Role { get; set; }
+
+    [JsonPropertyName("time")]
+    public string Time { get; set; }
+}
