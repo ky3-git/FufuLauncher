@@ -576,7 +576,7 @@ public async Task<LaunchResult> LaunchGameAsync()
                 if (enabled != null && Convert.ToBoolean(enabled))
                 {
                     var delaySetting = await _localSettingsService.ReadSettingAsync("BetterGIStartupDelaySeconds");
-                    var delaySeconds = delaySetting != null ? Math.Clamp(Convert.ToDouble(delaySetting), 0.0, 60.0) : 2.0;
+                    var delaySeconds = delaySetting != null ? Math.Clamp(Convert.ToDouble(delaySetting), 0.0, 60.0) : 0.0;
 
                     Debug.WriteLine($"[BetterGI] 配置已启用，将在 {delaySeconds:0.#} 秒后通过URL Scheme启动 bettergi://start");
 

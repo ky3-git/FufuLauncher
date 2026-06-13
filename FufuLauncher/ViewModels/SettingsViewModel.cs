@@ -87,14 +87,14 @@ namespace FufuLauncher.ViewModels
         [ObservableProperty] private bool _isShortTermSupportEnabled;
         [ObservableProperty] private bool _isBetterGIIntegrationEnabled;
         [ObservableProperty] private bool _isBetterGICloseOnExitEnabled;
-        private double _betterGIStartupDelaySeconds = 2.0;
+        private double _betterGIStartupDelaySeconds = 0.0;
         public double BetterGIStartupDelaySeconds
         {
             get => _betterGIStartupDelaySeconds;
             set
             {
-                var clampedValue = Math.Clamp(value, 0.0, 60.0);
-                if (SetProperty(ref _betterGIStartupDelaySeconds, clampedValue) && !_isInitializing)
+                var clampedValue = double.IsNaN(value) ? 0.0 : Math.Clamp(value, 0.0, 60.0);
+                if (SetProperty(ref _betterGIStartupDelaySeconds, clampedValue))
                 {
                     _ = _localSettingsService.SaveSettingAsync("BetterGIStartupDelaySeconds", clampedValue);
                 }
@@ -910,6 +910,9 @@ namespace FufuLauncher.ViewModels
 
             var betterGICloseJson = await _localSettingsService.ReadSettingAsync("IsBetterGICloseOnExitEnabled");
             IsBetterGICloseOnExitEnabled = betterGICloseJson != null && Convert.ToBoolean(betterGICloseJson);
+
+            var betterGIDelayJson = await _localSettingsService.ReadSettingAsync("BetterGIStartupDelaySeconds");
+            BetterGIStartupDelaySeconds = betterGIDelayJson != null ? Math.Clamp(Convert.ToDouble(betterGIDelayJson), 0.0, 60.0) : 0.0;
 
             var soundJson = await _localSettingsService.ReadSettingAsync("IsStartupSoundEnabled");
             IsStartupSoundEnabled = soundJson != null && Convert.ToBoolean(soundJson);
